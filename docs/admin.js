@@ -11,7 +11,7 @@ const kinds=["Comunicado","Campanha","Serviço","Evento"];
 const provider=new GoogleAuthProvider();
 provider.setCustomParameters({prompt:"select_account"});
 
-let target=null,toast=()=>{},user=null,isPlatformAdmin=false, cities=[], cityId="",tab="units",records=[],editId=null,unsub=null,hasInitialized=false,loading=false,notice="",loadSeq=0;
+let target=null,toast=()=>{},user=null,isPlatformAdmin=false, cities=[], cityId="",tab="units",records=[],members=[],editId=null,unsub=null,hasInitialized=false,loading=false,notice="",loadSeq=0;
 const head=()=>`<div class="page-heading"><div><span class="section-kicker">ADMINISTRAÇÃO SEGURA</span><h1>Central de gerenciamento</h1><p>Organize informações públicas por município. Nesta etapa não são permitidos prontuários, documentos de pacientes nem informações clínicas.</p></div><span class="pill">Acesso restrito</span></div>`;
 const feedback=message=>{notice=message;toast(message)};
 const err=error=>`${error.code||"Erro"}: ${error.message||"Não foi possível concluir a operação."}`;
@@ -53,8 +53,12 @@ function dataForm(){
  }
  return `<section class="form-panel admin-editor" id="adminEditor"><span class="section-kicker">${isEdit?"EDITAR REGISTRO":"NOVO REGISTRO"}</span><h2>${isEdit?"Atualizar":"Cadastrar"} ${tab==="units"?"unidade":tab==="notices"?"aviso":"ação"}</h2><form class="module-form" id="adminRecordForm">${common.join("")}<div class="input-field field-wide"><label class="admin-toggle"><input name="published" type="checkbox" ${r.published?"checked":""}> Publicar para os cidadãos após salvar</label><small>Publicações ficam visíveis na aba Rede municipal.</small></div><div class="form-actions"><button class="btn btn-solid" type="submit">${isEdit?"Salvar alterações":"Cadastrar"}</button><button class="btn btn-outline" type="button" data-admin="cancel">Cancelar</button></div></form></section>`;
 }
+function memberList(){
+ if(!members.length)return '<div class="empty-state"><strong>Sem usuários cadastrados</strong><p>Adicione o UID de uma conta autorizada para liberar a gestão.</p></div>';
+ return `<div class="panel" style="overflow-x:auto"><h3>Acessos cadastrados</h3><table class="table-like"><thead><tr><th>UID</th><th>Função</th><th>Status</th><th>Ação</th></tr></thead><tbody>${members.map(m=>`<tr><td><code>${esc(m.id)}</code></td><td>${m.role==="admin"?"Admin municipal":"Editor"}</td><td>${m.enabled?"Ativo":"Revogado"}</td><td><button type="button" class="btn btn-outline" data-admin-member="${esc(m.id)}">${m.enabled?"Revogar":"Reativar"}</button></td></tr>`).join("")}</tbody></table></div>`;
+}
 function accessPanel(){
- return `<div class="disclaimer">Atribua acesso somente a pessoas autorizadas. Você precisará do UID que aparece quando elas fazem login. <strong>O UID é uma identificação de conta, não de paciente.</strong></div><section class="panel"><h3>Permitir gestão deste município</h3><p>Disponível apenas para administradores da plataforma. Permissões são verificadas pelo Firestore.</p><form id="grantForm" class="module-form">${formField("UID do usuário *","memberUid","",128)}<div class="input-field"><label for="role">Nível de acesso</label><select id="role" name="role"><option value="editor">Editor</option><option value="admin">Administrador municipal</option></select></div><div class="form-actions"><button type="submit" class="btn btn-solid">Conceder acesso</button></div></form></section>`;
+ return `<div class="disclaimer">Atribua acesso somente a pessoas autorizadas. Você precisará do UID que aparece quando elas fazem login. <strong>O UID é uma identificação de conta, não de paciente.</strong></div><section class="panel"><h3>Permitir gestão deste município</h3><p>Disponível apenas para administradores da plataforma. Permissões são verificadas pelo Firestore.</p><form id="grantForm" class="module-form">${formField("UID do usuário *","memberUid","",128)}<div class="input-field"><label for="role">Nível de acesso</label><select id="role" name="role"><option value="editor">Editor</option><option value="admin">Administrador municipal</option></select></div><div class="form-actions"><button type="submit" class="btn btn-solid">Conceder acesso</button></div></form></section>${memberList()}`;
 }
 function dashboard(){
  const city=cities.find(c=>c.id===cityId);
@@ -92,6 +96,7 @@ async function loadAccess(){
   }
   if(seq!==loadSeq)return;
   isPlatformAdmin=platform;
+  if(!platform&&tab==="members")tab="units";
   cities=available.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   if(!cities.some(c=>c.id===cityId))cityId=cities[0]?.id||"";
   notice="";
@@ -105,11 +110,16 @@ async function loadAccess(){
 }
 async function loadRecords(){
  const seq=++loadSeq;
- if(!cityId||tab==="members"){records=[];show();return;}
+ if(!cityId){records=[];members=[];show();return;}
  try{
-  const snapshot=await getDocs(collection(db,"municipalities",cityId,tab));
+  const snapshot=await getDocs(collection(db,"municipalities",cityId,tab==="members"?"members":tab));
   if(seq!==loadSeq)return;
-  records=snapshot.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||a.title||"").localeCompare(b.name||b.title||"","pt-BR"));
+  if(tab==="members"){
+   members=snapshot.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.id.localeCompare(b.id));
+   records=[];
+  }else{
+   records=snapshot.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||a.title||"").localeCompare(b.name||b.title||"","pt-BR"));
+  }
  }catch(error){
   if(seq===loadSeq){records=[];notice=`Falha ao consultar registros: ${err(error)}`;}
  }
@@ -130,7 +140,7 @@ function parseRecord(form){
  return {title:v.title?.slice(0,90),date:v.date||"",time:v.time||"",place:(v.place||"").slice(0,120),description:(v.description||"").slice(0,400),published};
 }
 async function onClick(event){
- const button=event.target.closest("[data-admin],[data-admin-tab],[data-admin-edit],[data-admin-publish]");
+ const button=event.target.closest("[data-admin],[data-admin-tab],[data-admin-edit],[data-admin-publish],[data-admin-member]");
  if(!button)return;
  const action=button.dataset.admin;
  if(action==="login"){
@@ -142,6 +152,13 @@ async function onClick(event){
  if(button.dataset.adminTab){
   tab=button.dataset.adminTab;editId=null;notice="";
   loading=true;show();await loadRecords();loading=false;show();return;
+ }
+ if(button.hasAttribute("data-admin-member")&&isPlatformAdmin){
+  const member=members.find(m=>m.id===button.dataset.adminMember);
+  if(!member)return;
+  if(member.enabled&&!window.confirm("Revogar o acesso desta conta ao município?"))return;
+  await run(async()=>{await updateDoc(doc(db,"municipalities",cityId,"members",member.id),{enabled:!member.enabled,updatedAt:serverTimestamp()});});
+  return;
  }
  if(action==="new-record"){editId="";show();document.querySelector("#adminEditor")?.scrollIntoView({behavior:"smooth",block:"start"});return;}
  if(action==="cancel"){editId=null;show();return;}

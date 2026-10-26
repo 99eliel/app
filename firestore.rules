@@ -70,7 +70,7 @@ service cloud.firestore {
     }
 
     match /municipalities/{cityId} {
-      allow get, list: if resource.data.active == true || platformAdmin();
+      allow get, list: if platformAdmin() || resource.data.active == true;
       allow create: if platformAdmin() && validCity(request.resource.data);
       allow update: if platformAdmin() && validCity(request.resource.data)
                     && request.resource.data.createdAt == resource.data.createdAt;

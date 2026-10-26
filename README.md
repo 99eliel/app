@@ -16,7 +16,7 @@ Protótipo público em **GitHub Pages** e início do núcleo multi-município co
 - Exemplos locais de unidades, avisos e calendário (demonstração);
 - Painel visual profissional com números fictícios;
 - **Rede municipal**: consulta dados publicados de municípios ativos, com filtros e pesquisa;
-- **Administração**: login Google, cadastro de municípios, ativação/desativação, CRUD (criar/editar/publicar/despublicar) de unidades, avisos e ações; concessão de acesso por UID ao município para administradores da plataforma;
+- **Administração**: login Google, cadastro de municípios, ativação/desativação, CRUD (criar/editar/publicar/despublicar) de unidades, avisos e ações; concessão, revogação e reativação de acesso por UID ao município para administradores da plataforma;
 - Layout responsivo, tema escuro e acessibilidade inicial.
 
 Os três primeiros módulos locais são separados do conteúdo real: visitantes conseguem simular cadastros apenas no próprio aparelho; os registros públicos autenticados ficam no Firestore.
