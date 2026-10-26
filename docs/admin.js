@@ -1,6 +1,7 @@
 // Administração inicial: conteúdo PÚBLICO (unidades, avisos e ações).
 // Auth Google + Firestore; permissões e isolamento dependem das firestore.rules.
 import {auth,db} from "./firebase.js";
+import {explainFirebaseError} from "./auth-errors.js";
 import {GoogleAuthProvider,onAuthStateChanged,signInWithPopup,signOut} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import {addDoc,collection,doc,getDoc,getDocs,query,setDoc,updateDoc,serverTimestamp,where} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -144,7 +145,15 @@ async function onClick(event){
  if(!button)return;
  const action=button.dataset.admin;
  if(action==="login"){
-  try{notice="";await signInWithPopup(auth,provider)}catch(error){feedback(`Não foi possível entrar: ${err(error)}.`);show();}
+  try{
+    notice="";
+    await signInWithPopup(auth,provider);
+  }catch(error){
+    const diagnosis=explainFirebaseError(error);
+    notice=`${diagnosis.title}: ${diagnosis.message} ${diagnosis.fix} [${diagnosis.code}]`;
+    feedback(notice);
+    show();
+  }
   return;
  }
  if(action==="logout"){await signOut(auth);return;}

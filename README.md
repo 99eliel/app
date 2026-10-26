@@ -123,3 +123,9 @@ A conta Superadmin precisa estar provisionada manualmente em `platformAdmins/{ui
 - Não cadastre dados clínicos/pacientes durante o protótipo.
 
 **Importante:** os editores municipais só poderão gravar com uma licença configurada e válida quando as novas regras forem publicadas. O Superadmin mantém controle administrativo.
+
+## Diagnóstico de erro no login Google
+
+Ao clicar em **Entrar com Google**, a interface agora mostra o código de erro do Firebase com uma explicação e passos de resolução. O login com Google e as permissões de Superadmin são etapas distintas: um usuário pode autenticar e ainda receber `permission-denied` se não estiver cadastrado.
+
+Para o GitHub Pages, confirme em **Firebase Console → Authentication → Settings → Authorized domains** a presença de **`99eliel.github.io`** (sem `https://` e sem `/app/`). Em **Sign-in method**, habilite o provedor Google no projeto **`conectesaude-1`**. Essas configurações são feitas pelo proprietário do Firebase e não podem ser aplicadas por um commit no GitHub Pages.

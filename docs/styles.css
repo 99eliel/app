@@ -95,3 +95,12 @@ body.dark .license-badge.good{background:#204e3c;color:#8ceec5}body.dark .licens
 body.dark .license-badge.bad{background:#512e34;color:#ffa3ad}body.dark .license-badge.neutral{background:#31444f;color:#d3e1e7}
 @media(max-width:1130px){.license-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.billing-layout{grid-template-columns:1fr}.billing-directory{position:static;max-height:none}}
 @media(max-width:640px){.license-metric{padding:15px}.license-metric strong{font-size:24px}.billing-top{flex-direction:column;align-items:flex-start}.billing-editor-head{flex-direction:column}.license-entry{gap:6px}.history-item{align-items:flex-start;flex-wrap:wrap;gap:5px}.history-item small{margin-left:0;width:100%}}
+
+/* Erros de autenticação: visíveis até a próxima tentativa */
+.auth-error{max-width:680px;margin:18px auto;border-color:#e6b8b8;background:#fff8f5;}
+.auth-error h3{font-size:16px;color:#9b3636;margin-bottom:8px;}
+.auth-error p{font-size:12px;color:#6b5252;line-height:1.7;margin:8px 0;}
+.auth-error code{display:inline-block;padding:7px 11px;border-radius:8px;background:#ffe9e1;color:#912d2d;font-weight:800;font-size:12px}
+.auth-error a{font-size:12px;font-weight:800;color:#a03d39;text-decoration:underline}
+body.dark .auth-error{background:#412b2d;border-color:#704b4f}
+body.dark .auth-error h3,body.dark .auth-error p,body.dark .auth-error a{color:#ffbaba}

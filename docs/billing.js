@@ -1,6 +1,7 @@
 // Painel comercial reservado aos superadministradores.
 // Cobranças acontecem fora do app. Este módulo não processa pagamentos.
 import {auth,db} from "./firebase.js";
+import {explainFirebaseError} from "./auth-errors.js";
 import {GoogleAuthProvider,onAuthStateChanged,signInWithPopup,signOut} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import {collection,doc,getDoc,getDocs,query,orderBy,serverTimestamp,Timestamp,writeBatch} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 import {LICENSE_STATUS,PLAN_OPTIONS,STATUS_LABELS,effectiveLicenseStatus,isLicenseWritable,parseBrlToCents,centsToBrlInput,dateInputFromTimestamp,endOfLocalDate,formatBrl} from "./license-core.js";
@@ -21,7 +22,7 @@ const displayError = error => {
 };
 
 export function mountBilling(root, inform, signal) {
- let loggedIn=null, admin=false, cities=[],licenses=new Map(),selectedId="",loading=true,error="",audit=[],active=false;
+ let loggedIn=null, admin=false, cities=[],licenses=new Map(),selectedId="",loading=true,error="",audit=[],active=false,loginError=null;
  let readGeneration=0;
  const toast=inform||(()=>{});
  const isCurrent=()=>!signal?.aborted&&root.isConnected&&location.hash.split("?")[0]==="#assinaturas";
@@ -31,7 +32,7 @@ export function mountBilling(root, inform, signal) {
   if(!isCurrent())return;
   if(loading){root.innerHTML=headings+'<div class="panel"><p>Carregando o painel comercial...</p></div>';return;}
   if(error)root.innerHTML=headings+`<div class="disclaimer"><strong>Não foi possível carregar os dados.</strong> ${safe(error)}</div><button type="button" class="btn btn-outline" data-billing="reload">Tentar novamente</button>`;
-  else if(!loggedIn)root.innerHTML=headings+`<div class="panel admin-intro"><span class="module-bubble" aria-hidden="true">🔐</span><h2>Área reservada ao proprietário</h2><p>Entre com sua conta Google autorizada. Somente usuários incluídos na coleção protegida platformAdmins podem acessar informações comerciais.</p><button type="button" class="btn btn-solid" data-billing="login">Entrar com Google</button></div>`;
+  else if(!loggedIn)root.innerHTML=headings+`<div class="panel admin-intro"><span class="module-bubble" aria-hidden="true">🔐</span><h2>Área reservada ao proprietário</h2><p>Entre com sua conta Google autorizada. Somente usuários incluídos na coleção protegida platformAdmins podem acessar informações comerciais.</p><button type="button" class="btn btn-solid" data-billing="login">Entrar com Google</button><p class="module-caption">Se o Google não abrir, confira se o domínio 99eliel.github.io está em Firebase Authentication → Domínios autorizados.</p></div>${loginError?`<section class="auth-error panel" role="alert"><h3>${safe(loginError.title)}</h3><p>${safe(loginError.message)}</p><p><strong>Como resolver:</strong> ${safe(loginError.fix)}</p><code>${safe(loginError.code)}</code><p><a href="https://console.firebase.google.com/project/conectesaude-1/authentication/settings" target="_blank" rel="noopener noreferrer">Abrir configurações do Firebase ↗</a></p></section>`:""}`;
   else if(!admin)root.innerHTML=headings+`<div class="disclaimer"><strong>Acesso restrito.</strong> A conta ${safe(loggedIn.email)} não possui permissão de Superadmin. UID: <code>${safe(loggedIn.uid)}</code></div><button type="button" class="btn btn-outline" data-billing="logout">Sair da conta</button>`;
   else root.innerHTML=dashboard();
  };
@@ -156,7 +157,15 @@ export function mountBilling(root, inform, signal) {
   if(!button)return;
   const action=button.dataset.billing;
   if(action==="login"){
-   try{await signInWithPopup(auth,provider);}catch(e){toast(displayError(e));}return;
+   try{
+    loginError=null;
+    await signInWithPopup(auth,provider);
+   }catch(e){
+    loginError=explainFirebaseError(e);
+    toast(`${loginError.title} (${loginError.code})`);
+    render();
+   }
+   return;
   }
   if(action==="logout"){await signOut(auth);return;}
   if(action==="reload"){void load();return;}
@@ -180,8 +189,12 @@ export function mountBilling(root, inform, signal) {
  root.addEventListener("submit",submit,{signal});
  const unsub=onAuthStateChanged(auth,next=>{
   loggedIn=next;admin=false;
+  if(next)loginError=null;
   void load();
- },e=>{error=displayError(e);loading=false;render();});
+ },e=>{
+  loginError=explainFirebaseError(e);
+  loading=false;render();
+ });
  if(signal)signal.addEventListener("abort",()=>{readGeneration++;unsub();},{once:true});
  render();
 }
