@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b2431">
+  <meta name="description" content="ConectaSaúde: serviços, informações e cuidado mais perto de você. Plataforma independente em demonstração.">
+  <meta name="color-scheme" content="light dark">
+  <title>ConectaSaúde | Saúde mais próxima</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <a class="brand" href="#inicio" aria-label="ConectaSaúde — início">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" width="32" height="32" fill="none"><path d="M18 5v26M5 18h26" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M26 5c2.8 0 5 2.2 5 5" stroke="#7af2cf" stroke-width="3" stroke-linecap="round"/></svg></span>
+        <span class="brand-type">conecta<span>saúde</span><small>TECNOLOGIA PARA CUIDAR</small></span>
+      </a>
+      <div class="workspace">
+        <span class="workspace-icon">✦</span>
+        <div><strong>Ambiente de demonstração</strong><small>Produto independente</small></div>
+      </div>
+      <p class="nav-label">MENU PRINCIPAL</p>
+      <nav class="sidebar-nav" aria-label="Seções do aplicativo">
+        <a href="#inicio" data-nav="inicio"><span aria-hidden="true">⌂</span> Visão geral</a>
+        <a href="#servicos" data-nav="servicos"><span aria-hidden="true">▦</span> Serviços de saúde</a>
+        <a href="#meu-espaco" data-nav="meu-espaco"><span aria-hidden="true">♡</span> Meu espaço</a>
+        <a href="#orientacoes" data-nav="orientacoes"><span aria-hidden="true">✳</span> Orientações</a>
+      </nav>
+      <p class="nav-label nav-label--second">EXPLORAR A PLATAFORMA</p>
+      <nav class="sidebar-nav" aria-label="Ferramentas de demonstração">
+        <a href="#gestao" data-nav="gestao"><span aria-hidden="true">▤</span> Painel profissional <em>DEMO</em></a>
+        <a href="#sobre" data-nav="sobre"><span aria-hidden="true">ⓘ</span> Sobre o projeto</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card"><span class="help-illustration" aria-hidden="true">✧</span><strong>Mais perto de quem precisa.</strong><p>Um novo jeito de conectar pessoas e serviços de saúde.</p><a href="#sobre">Conheça o projeto <span aria-hidden="true">↗</span></a></div>
+        <div class="sidebar-foot"><span class="status-dot"></span> Protótipo v0.1 · Conteúdo demonstrativo</div>
+      </div>
+    </aside>
+    <div class="workspace-main">
+      <header class="topbar">
+        <div class="topbar-location"><span class="topbar-eyebrow">PLATAFORMA DIGITAL DE SAÚDE</span><strong id="pageTitle">Visão geral</strong></div>
+        <div class="topbar-actions">
+          <form class="top-search" id="globalSearchForm" role="search">
+            <span aria-hidden="true">⌕</span>
+            <input id="globalSearch" type="search" name="busca" placeholder="Busque por serviços..." aria-label="Buscar serviços de saúde" autocomplete="off">
+            <button type="submit" aria-label="Buscar">↗</button>
+          </form>
+          <button class="icon-button" id="textSizeButton" title="Aumentar texto" aria-label="Alternar tamanho do texto">Aa</button>
+          <button class="icon-button" id="themeButton" title="Alternar tema" aria-label="Alternar tema claro e escuro">☾</button>
+          <div class="profile-chip" aria-label="Ambiente de demonstração"><span class="avatar">CS</span><span><strong>Bem-vindo(a)</strong><small>Visitante</small></span></div>
+        </div>
+      </header>
+      <main id="view" class="page-content" tabindex="-1" aria-live="polite">
+        <div class="loading"><span class="loading-dot"></span> Preparando sua experiência...</div>
+      </main>
+      <footer class="footer"><span>© <span id="year"></span> ConectaSaúde · Produto independente</span><span>Versão demonstrativa. Não substitui os canais oficiais de saúde.</span></footer>
+    </div>
+    <nav class="bottom-nav" aria-label="Navegação para celular">
+      <a href="#inicio" data-nav="inicio"><span>⌂</span> Início</a>
+      <a href="#servicos" data-nav="servicos"><span>▦</span> Serviços</a>
+      <a href="#meu-espaco" data-nav="meu-espaco"><span>♡</span> Meu espaço</a>
+      <a href="#gestao" data-nav="gestao"><span>▤</span> Gestão</a>
+    </nav>
+  </div>
+  <dialog id="serviceDialog" class="service-dialog" aria-labelledby="dialogTitle">
+    <div id="dialogContent"></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div id="analyticsBanner" class="consent-banner" hidden></div>
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
