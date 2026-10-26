@@ -22,7 +22,7 @@ function card(kind,object){
  if(kind==="notices")return `<article class="data-card"><div class="data-card-top"><span class="module-bubble">📣</span><span class="pill">${E(a.kind||"Comunicado")}</span></div><h3>${E(a.title)}</h3><p class="data-caption">${E(a.description)}</p></article>`;
  return `<article class="data-card"><div class="data-card-top"><span class="module-bubble">🗓️</span><span class="pill">Agenda</span></div><h3>${E(a.title)}</h3><p class="data-caption">${formatDate(a.date,a.time)}</p><div class="data-detail"><strong>Local</strong><span>${E(a.place||"A confirmar")}</span></div><p class="data-caption">${E(a.description||"")}</p></article>`;
 }
-export async function mountNetwork(target){
+export async function mountNetwork(target,signal){
  target.innerHTML=`${pageHead()}<div class="panel"><p>Carregando municípios disponíveis...</p></div>`;
  let cities=[];
  try{
@@ -32,7 +32,7 @@ export async function mountNetwork(target){
   if(target.isConnected)target.innerHTML=`${pageHead()}<div class="disclaimer"><strong>Rede ainda não configurada.</strong> Não conseguimos consultar os municípios publicados. Verifique se o Firestore foi criado e se as regras foram implantadas. <small>Código: ${E(error.code||"indisponível")}</small></div><a class="btn btn-outline" href="#modulos">Explorar a demonstração</a>`;
   return;
  }
- if(!target.isConnected)return;
+ if(signal?.aborted||!target.isConnected)return;
  if(!cities.length){
   target.innerHTML=`${pageHead()}<div class="empty-state"><span style="font-size:38px" aria-hidden="true">🏥</span><strong>Nenhum município publicado ainda</strong><p>Quando a administração cadastrar e ativar um município, seus serviços aparecerão aqui. Enquanto isso, explore os blocos demonstrativos.</p><a href="#modulos" class="btn btn-solid">Explorar módulos ↗</a></div>`;
   return;
@@ -53,12 +53,12 @@ export async function mountNetwork(target){
   const current=++seq;
   try{
    const snap=await getDocs(query(collection(db,"municipalities",cityId,tab),where("published","==",true)));
-   if(current!==seq||!target.isConnected)return;
+   if(signal?.aborted||current!==seq||!target.isConnected)return;
    docs=snap.docs.map(d=>({id:d.id,...d.data()}));
    docs.sort((a,b)=>tab==="events"?(a.date||"").localeCompare(b.date||""):(a.name||a.title||"").localeCompare(b.name||b.title||"","pt-BR"));
    drawDocs();
   }catch(error){
-   if(current!==seq||!target.isConnected)return;
+   if(signal?.aborted||current!==seq||!target.isConnected)return;
    target.querySelector("#networkCards").innerHTML=`<div class="disclaimer">Não foi possível consultar estas publicações. Verifique as regras do Firestore. <small>${E(error.code||"indisponível")}</small></div>`;
   }
  }
@@ -69,19 +69,21 @@ export async function mountNetwork(target){
   area.innerHTML=visible.length?visible.map(d=>card(tab,d)).join(""):`<div class="empty-state"><strong>Nenhum resultado nesta seção</strong><p>Não existem publicações com estes filtros para este município.</p></div>`;
  }
  target.addEventListener("change",async event=>{
+  if(signal?.aborted)return;
   if(event.target.id==="citySelect"){
    cityId=event.target.value;try{localStorage.setItem(cityKey,cityId)}catch{}
    search="";await show();
   }
- });
+ },{signal});
  target.addEventListener("click",async event=>{
   const button=event.target.closest("[data-network-tab]");
-  if(!button)return;
+  if(!button||signal?.aborted)return;
   tab=button.dataset.networkTab;search="";await show();
- });
+ },{signal});
  target.addEventListener("input",event=>{
+  if(signal?.aborted)return;
   if(event.target.id!=="networkSearch")return;
   search=event.target.value;drawDocs();
- });
+ },{signal});
  await show();
 }

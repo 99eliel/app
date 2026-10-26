@@ -17,8 +17,19 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.enabled == true
         && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.role in ['admin','editor'];
     }
-    function canEdit(cityId) {
+    function canView(cityId) {
       return platformAdmin() || isMember(cityId);
+    }
+    // A suspensão comercial não apaga registros nem retira acesso de leitura
+    // da equipe autorizada. Apenas gravações municipais são interrompidas.
+    function currentLicense(cityId) {
+      return exists(/databases/$(database)/documents/licenses/$(cityId))
+        && get(/databases/$(database)/documents/licenses/$(cityId)).data.status in ['trial','active','grace']
+        && get(/databases/$(database)/documents/licenses/$(cityId)).data.validUntil is timestamp
+        && get(/databases/$(database)/documents/licenses/$(cityId)).data.validUntil > request.time;
+    }
+    function canEdit(cityId) {
+      return platformAdmin() || (isMember(cityId) && currentLicense(cityId));
     }
     function cityActive(cityId) {
       return get(/databases/$(database)/documents/municipalities/$(cityId)).data.active == true;
@@ -64,6 +75,46 @@ service cloud.firestore {
         && data.createdAt is timestamp && data.updatedAt is timestamp;
     }
 
+
+    function validLicense(data) {
+      return data.keys().hasOnly(['status','planCode','validUntil','monthlyPriceCents','notes','createdAt','updatedAt'])
+        && data.keys().hasAll(['status','planCode','validUntil','monthlyPriceCents','notes','createdAt','updatedAt'])
+        && data.status in ['trial','active','grace','suspended','canceled']
+        && data.planCode in ['Inicial','Essencial','Profissional','Municipal','Personalizado']
+        && data.validUntil is timestamp
+        && data.monthlyPriceCents is int && data.monthlyPriceCents >= 0
+        && data.monthlyPriceCents <= 100000000
+        && data.notes is string && data.notes.size() <= 500
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function validLicenseLog(data) {
+      return data.keys().hasOnly(['action','actorUid','previousStatus','nextStatus','changedAt'])
+        && data.keys().hasAll(['action','actorUid','previousStatus','nextStatus','changedAt'])
+        && data.action in ['save','suspend']
+        && data.actorUid == request.auth.uid
+        && data.previousStatus in ['trial','active','grace','suspended','canceled','unconfigured']
+        && data.nextStatus in ['trial','active','grace','suspended','canceled']
+        && data.changedAt is timestamp;
+    }
+
+    // Metadados comerciais são privados e NUNCA ficam em municípios públicos.
+    match /licenses/{cityId} {
+      allow get, list: if platformAdmin();
+      allow create: if platformAdmin()
+        && exists(/databases/$(database)/documents/municipalities/$(cityId))
+        && validLicense(request.resource.data);
+      allow update: if platformAdmin()
+        && validLicense(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /history/{eventId} {
+        allow get, list: if platformAdmin();
+        allow create: if platformAdmin() && validLicenseLog(request.resource.data);
+        allow update, delete: if false;
+      }
+    }
+
     match /platformAdmins/{userId} {
       allow get: if loggedIn() && request.auth.uid == userId;
       allow list, create, update, delete: if false;
@@ -89,21 +140,21 @@ service cloud.firestore {
       }
 
       match /units/{recordId} {
-        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
         allow create: if canEdit(cityId) && validUnit(request.resource.data);
         allow update: if canEdit(cityId) && validUnit(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }
       match /notices/{recordId} {
-        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
         allow create: if canEdit(cityId) && validNotice(request.resource.data);
         allow update: if canEdit(cityId) && validNotice(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }
       match /events/{recordId} {
-        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
         allow create: if canEdit(cityId) && validEvent(request.resource.data);
         allow update: if canEdit(cityId) && validEvent(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;

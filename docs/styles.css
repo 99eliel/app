@@ -68,3 +68,30 @@ body.dark .module-bubble{background:#234d45}
 .input-field small{font-size:10px;color:var(--muted)}
 body.dark .network-promo{background:#193b36;border-color:#316651}body.dark .network-promo p{color:#b5d8ce}
 @media(max-width:750px){.network-promo{align-items:flex-start;flex-direction:column}.network-controls{grid-template-columns:1fr}.admin-top{align-items:flex-start;flex-direction:column}.admin-identity{align-items:flex-start;flex-direction:column}.admin-identity code{font-size:9px;overflow-wrap:anywhere}}
+
+/* Licenças e assinaturas — painel privado do Superadmin */
+.billing-top{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:16px 20px;margin:0 0 18px}
+.billing-top strong{font-size:13px}.billing-top p{font-size:11px;color:var(--muted);margin:5px 0 0}
+.license-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:20px}
+.license-metric{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:20px;display:flex;flex-direction:column;gap:8px}
+.license-metric span{font-size:11px;line-height:1.5;color:var(--muted);font-weight:700}
+.license-metric strong{font:800 29px "Plus Jakarta Sans",sans-serif;letter-spacing:-1px}
+.billing-layout{display:grid;grid-template-columns:minmax(240px,.78fr) minmax(0,1.5fr);gap:18px;align-items:start}
+.billing-directory{position:sticky;top:20px;max-height:75vh;overflow:auto}
+.billing-directory .section-head{margin:0 0 16px}.billing-directory h2{font-size:18px}.billing-directory .section-head p{font-size:11px}
+.license-list{display:grid;gap:8px}
+.license-entry{width:100%;display:flex;gap:10px;align-items:center;justify-content:space-between;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface-alt);color:var(--text);padding:13px}
+.license-entry.selected{border-color:#32b293;box-shadow:0 0 0 2px #32b29327}
+.license-entry-main{min-width:0;display:grid;gap:5px}.license-entry-main strong{font-size:12px;overflow-wrap:anywhere}.license-entry-main small{font-size:10px;color:var(--muted)}
+.license-badge{white-space:nowrap;padding:6px 9px;border-radius:20px;font-size:10px;font-weight:800;background:var(--surface-alt);color:var(--muted)}
+.license-badge.good{background:#e0f9ec;color:#077952}.license-badge.warn{background:#fff3da;color:#97611f}
+.license-badge.bad{background:#ffebeb;color:#a83333}.license-badge.neutral{background:#ebeff2;color:#67747f}
+.billing-details{display:grid;gap:17px;min-width:0}.billing-editor h2{font-size:22px;margin:7px 0}.billing-editor-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.billing-editor-head p{font-size:11px;line-height:1.65;color:var(--muted)}
+.billing-editor .module-form{margin-top:18px}.billing-editor .disclaimer{margin:18px 0}
+.billing-history h3{margin:0 0 16px}.history-list{display:grid;gap:9px}.history-item{display:flex;align-items:center;gap:15px;border-bottom:1px solid var(--line);padding:10px 0}
+.history-item span,.history-item small{font-size:11px;color:var(--muted)}.history-item strong{font-size:12px}.history-item small{margin-left:auto;overflow-wrap:anywhere}
+body.dark .license-badge.good{background:#204e3c;color:#8ceec5}body.dark .license-badge.warn{background:#4d3b26;color:#ffd08b}
+body.dark .license-badge.bad{background:#512e34;color:#ffa3ad}body.dark .license-badge.neutral{background:#31444f;color:#d3e1e7}
+@media(max-width:1130px){.license-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.billing-layout{grid-template-columns:1fr}.billing-directory{position:static;max-height:none}}
+@media(max-width:640px){.license-metric{padding:15px}.license-metric strong{font-size:24px}.billing-top{flex-direction:column;align-items:flex-start}.billing-editor-head{flex-direction:column}.license-entry{gap:6px}.history-item{align-items:flex-start;flex-wrap:wrap;gap:5px}.history-item small{margin-left:0;width:100%}}

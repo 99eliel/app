@@ -42,8 +42,14 @@ function overview(){
  ${overviewCard("♡","Meu espaço","Checklist geral e serviços favoritos no próprio dispositivo.","meu-espaco","Disponível")}
  ${overviewCard("📊","Painel profissional","Explore a proposta visual de indicadores para gestores.","gestao","Simulação")}
  </div>
+ <div class="section-head"><div><span class="section-kicker">GESTÃO DA PLATAFORMA</span><h2>Áreas restritas</h2><p>Ferramentas protegidas por autenticação e regras de acesso no Firestore.</p></div></div>
+ <div class="module-grid module-grid--compact">
+ ${overviewCard("⚙","Administração municipal","Cadastre municípios, equipes, unidades, avisos e ações publicadas.","administracao","Login necessário")}
+ ${overviewCard("◈","Assinaturas e licenças","Controle planos, mensalidades, vigência e suspensão do contrato.","assinaturas","Somente Superadmin")}
+ ${overviewCard("⌖","Rede municipal","Consulte apenas os registros publicados de cidades habilitadas.","rede","Acesso público")}
+ </div>
  <div class="section-head"><div><span class="section-kicker">EVOLUÇÃO CONTÍNUA</span><h2>Próximos blocos em estudo</h2></div></div>
- <div class="panel"><div class="step-row"><span class="step-number">01</span><div><strong>Autenticação e municípios</strong><small>Configuração multiempresa, permissões e isolamento entre cidades.</small></div></div><div class="step-row"><span class="step-number">02</span><div><strong>Solicitações e agendamentos</strong><small>Dependem de fluxos reais, autorização institucional e integração segura.</small></div></div><div class="step-row"><span class="step-number">03</span><div><strong>Comunicação e notificações</strong><small>Informações relevantes por município, respeitando consentimentos.</small></div></div></div>`;
+ <div class="panel"><div class="step-row"><span class="step-number">01</span><div><strong>Consolidação e testes de segurança</strong><small>Login e estrutura multi-município criados; falta homologar permissões no Firebase.</small></div></div><div class="step-row"><span class="step-number">02</span><div><strong>Solicitações e agendamentos</strong><small>Dependem de fluxos reais, autorização institucional e integração segura.</small></div></div><div class="step-row"><span class="step-number">03</span><div><strong>Comunicação e notificações</strong><small>Informações relevantes por município, respeitando consentimentos.</small></div></div></div>`;
 }
 function unitCard(u){
  const mapTitle=u.example?`<span class="pill">Fictícia</span>`:`<span class="pill">Cadastro local</span>`;

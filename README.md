@@ -104,3 +104,22 @@ A configuração `firebaseConfig` é pública por natureza e não é uma chave d
 3. Criar política de privacidade, processos de suporte, logs e monitoramento.
 4. Integrar serviços de municípios com autorização formal e sem dados pessoais no protótipo.
 5. Empacotar, compilar e testar Android/iOS com Capacitor quando a plataforma estiver definida.
+
+## Central comercial e assinaturas (nova)
+
+Agora existe a rota [Assinaturas e licenças](https://99eliel.github.io/app/#assinaturas), visível na navegação. O conteúdo é restrito ao **Superadmin** autenticado.
+
+Depois de criar o município na área Administração, abra a central comercial para definir sua licença, plano, valor mensal em reais, validade, situação de teste/atividade/carência ou suspensão. Os registros comerciais ficam em `licenses/{cityId}`, separados dos dados públicos.
+
+**Cobranças são externas e o painel NÃO valida pagamentos automaticamente.** A reativação depende de ajuste manual. Suspender ou deixar vencer bloqueia a **escrita municipal** no servidor quando as regras novas estiverem implantadas. O conteúdo publicado e os dados já armazenados não são apagados.
+
+A conta Superadmin precisa estar provisionada manualmente em `platformAdmins/{uid}`; o login Google, por si só, não dá acesso.
+
+### Antes de usar o controle comercial
+
+- No projeto Firebase **conectesaude-1**, publique `firestore.rules` (GitHub Pages não publica regras do Firestore).
+- Verifique primeiro o procedimento de segurança e autorização no documento [ARCHITECTURE.md](ARCHITECTURE.md).
+- Rode testes com Firebase Emulator Suite para confirmar isolamento por município, licença vencida, leitura preservada e escrita bloqueada.
+- Não cadastre dados clínicos/pacientes durante o protótipo.
+
+**Importante:** os editores municipais só poderão gravar com uma licença configurada e válida quando as novas regras forem publicadas. O Superadmin mantém controle administrativo.

@@ -209,19 +209,27 @@ async function onSubmit(event){
   });
  }
 }
-export function mountAdmin(node,notify){
+export function mountAdmin(node,notify,signal){
+ if(unsub){unsub();unsub=null;}
+ hasInitialized=false;
  target=node;toast=notify||(()=>{});
- if(!hasInitialized){
-  hasInitialized=true;
-  unsub=onAuthStateChanged(auth,async current=>{
-   user=current;editId=null;await loadAccess();
-  },error=>{notice=`Erro de autenticação: ${err(error)}`;loading=false;show()});
- }
- target.addEventListener("click",onClick);
- target.addEventListener("submit",onSubmit);
- target.addEventListener("change",async event=>{
-  if(event.target.id!=="adminCity")return;
+ user=null;isPlatformAdmin=false;cities=[];records=[];members=[];editId=null;loading=true;notice="";
+ const currentTarget=node;
+ hasInitialized=true;
+ unsub=onAuthStateChanged(auth,async current=>{
+  if(signal?.aborted)return;
+  user=current;editId=null;await loadAccess();
+ },error=>{if(signal?.aborted)return;notice=`Erro de autenticação: ${err(error)}`;loading=false;show()});
+ node.addEventListener("click",onClick,{signal});
+ node.addEventListener("submit",onSubmit,{signal});
+ node.addEventListener("change",async event=>{
+  if(event.target.id!=="adminCity"||signal?.aborted)return;
   cityId=event.target.value;editId=null;notice="";loading=true;show();await loadRecords();loading=false;show();
- });
+ },{signal});
+ signal?.addEventListener("abort",()=>{
+  ++loadSeq;
+  unsub?.();unsub=null;hasInitialized=false;
+  if(target===currentTarget)target=null;
+ },{once:true});
  show();
 }

@@ -22,6 +22,8 @@ jobs:
             echo "Verificando $f"
             node --input-type=module --check < "$f"
           done
+      - name: Testar lógica pura de assinaturas
+        run: node --experimental-default-type=module --test tests/*.test.mjs
       - name: Confirmar arquivos do GitHub Pages
         shell: bash
         run: |
@@ -31,4 +33,7 @@ jobs:
           test -s docs/firebase.js
           test -s docs/network.js
           test -s docs/admin.js
+          test -s docs/billing.js
+          test -s docs/license-core.js
+          test -s index.html
           test -s firestore.rules
