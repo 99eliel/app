@@ -1,3 +1,4 @@
+import { modules } from "./modules.js";
 const services = [
   {id:"consultas",title:"Consultas na atenção básica",cat:"Atendimentos",icon:"🩺",tone:"mint",summary:"Saiba por onde começar para buscar atendimento e acompanhamento de rotina.",info:"A Unidade Básica de Saúde (UBS) é uma porta de entrada para cuidados de rotina, prevenção e acompanhamento.",steps:["Identifique sua UBS de referência.","Confirme na unidade os horários e como funcionam os atendimentos.","Leve a documentação solicitada pela equipe."]},
   {id:"vacinas",title:"Vacinação",cat:"Prevenção",icon:"💉",tone:"blue",summary:"Consulte orientações sobre vacinação e saiba onde buscar informações oficiais.",info:"A vacinação segue calendários e orientações definidos pelas autoridades de saúde.",steps:["Consulte o calendário de vacinação atualizado.","Separe o cartão de vacina, se disponível.","Confirme os locais e horários oficiais do município."]},
@@ -25,7 +26,7 @@ const checklist = [
   {id:"vacinas",label:"Consultar o calendário de vacinação atualizado"}
 ];
 
-const routes = {"inicio":"Visão geral","servicos":"Serviços de saúde","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
+const routes = {"inicio":"Visão geral","servicos":"Serviços de saúde","modulos":"Módulos da plataforma","unidades":"Unidades de saúde","avisos":"Avisos e campanhas","calendario":"Calendário de ações","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
 const $ = selector => document.querySelector(selector);
 const safeGet = key => {try{return localStorage.getItem(key)}catch{return null}};
 const safeSet = (key,value) => {try{localStorage.setItem(key,value)}catch{console.info("Armazenamento indisponível.")}};
@@ -58,6 +59,12 @@ function card(s){
 function home(){
 return `<section class="hero"><div class="hero-copy"><span class="eyebrow">✦ CUIDADO QUE CONECTA</span><h1>Uma saúde mais próxima. <span>Uma vida mais simples.</span></h1><p>Informações, orientações e serviços de saúde reunidos em um só lugar. Um novo jeito de aproximar pessoas e cuidado.</p><div class="hero-actions"><a href="#servicos" class="btn btn-primary">Explorar serviços ↗</a><a href="#sobre" class="btn btn-light">Conheça o projeto</a></div></div><div class="hero-visual" aria-hidden="true"><div class="hero-orbit"><span class="hero-heart">✚</span></div><div class="float-pill float-pill--one">✦ Informação acessível</div><div class="float-pill float-pill--two">♡ Cuidado para todos</div></div></section>
 ${notice()}
+<div class="section-head"><div><span class="section-kicker">NOVOS BLOCOS</span><h2>Explore as funcionalidades</h2><p>Comece por três áreas que você já pode experimentar.</p></div><a href="#modulos" class="text-link">Todos os módulos ↗</a></div>
+<section class="module-grid module-grid--compact" aria-label="Novos módulos de demonstração">
+ <a href="#unidades" class="module-card"><span class="module-bubble" aria-hidden="true">🏥</span><strong class="module-card-title">Unidades de saúde</strong><span class="module-card-description">Cadastre e encontre locais de atendimento.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
+ <a href="#avisos" class="module-card"><span class="module-bubble" aria-hidden="true">📣</span><strong class="module-card-title">Avisos e campanhas</strong><span class="module-card-description">Organize comunicados e campanhas.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
+ <a href="#calendario" class="module-card"><span class="module-bubble" aria-hidden="true">🗓️</span><strong class="module-card-title">Calendário de ações</strong><span class="module-card-description">Crie datas de atividades comunitárias.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
+</section>
 <section class="stats-grid" aria-label="Áreas da plataforma">
 <div class="stat-card"><span class="stat-icon stat-icon--mint">▦</span><h3>Serviços</h3><p>Explore orientações de atendimento.</p></div>
 <div class="stat-card"><span class="stat-icon stat-icon--blue">♧</span><h3>Prevenção</h3><p>Informação para o cuidado diário.</p></div>
@@ -129,7 +136,7 @@ function about(){
  <div class="panel"><h3>Privacidade por princípio</h3><p>Não coletamos informações clínicas. Favoritos, checklist e preferências ficam somente no navegador. O Analytics é opcional e requer sua autorização.</p><div class="button-row"><button type="button" class="btn btn-outline" data-action="consent-settings">Preferências do Analytics</button><button type="button" class="btn btn-outline" data-action="clear-local">Apagar dados locais</button></div></div></section>
  ${notice("Esta iniciativa é independente e não representa um canal oficial de atendimento de prefeitura. O uso de dados reais exige autorizações e cuidados legais específicos.")}`;
 }
-const views={"inicio":home,"servicos":catalog,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":management,"sobre":about};
+const views={"inicio":home,"servicos":catalog,"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":management,"sobre":about};
 function render(){
  const current=route();
  $("#view").innerHTML=views[current]();
@@ -220,6 +227,7 @@ $("#serviceDialog").addEventListener("click",event=>{
 });
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 $("#themeButton").textContent=state.theme==="dark"?"☀":"☾";
+modules.setup({refresh:render,toast});
 render();
 if(!state.consent)showConsent();
 else if(state.consent==="accepted")void enableAnalyticsIfConsented();

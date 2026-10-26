@@ -4,9 +4,9 @@ Plataforma independente de serviços e orientação em saúde, em desenvolviment
 
 ## Estrutura
 
-- `public/`: site estático responsivo, pronto para Firebase Hosting.
-- `public/app.js`: interface, navegação, buscas e dados **demonstrativos**.
-- `public/firebase.js`: configuração do Firebase e Analytics sob consentimento.
+- `docs/`: site estático responsivo, pronto para Firebase Hosting.
+- `docs/app.js`: interface, navegação, buscas e dados **demonstrativos**.
+- `docs/firebase.js`: configuração do Firebase e Analytics sob consentimento.
 - `firebase.json` / `.firebaserc`: deploy no projeto Firebase `conectesaude-1`.
 - `firestore.rules`: acesso negado até definirmos autenticação e regras por organização.
 
@@ -15,12 +15,32 @@ Plataforma independente de serviços e orientação em saúde, em desenvolviment
 É necessário usar um servidor HTTP local (não `file://`) para carregar módulos JavaScript.
 
 ```bash
-npx serve public
+npx serve docs
 ```
 
-Ou use a extensão Live Server do VS Code apontando para `public/index.html`.
+Ou use a extensão Live Server do VS Code apontando para `docs/index.html`.
 
-## Publicar no Firebase Hosting
+## GitHub Pages (publicação temporária)
+
+O site está na pasta `docs/` para funcionar como GitHub Pages sem processo de compilação.
+
+1. No repositório, abra **Settings → Pages**.
+2. Em **Build and deployment**, escolha **Deploy from a branch**.
+3. Selecione branch **main** e diretório **/docs**, depois **Save**.
+4. Aguarde a publicação em `https://99eliel.github.io/app/` (apenas depois da ativação do Pages).
+
+As próximas alterações em `docs/` são publicadas automaticamente após o commit em `main`.
+
+## Blocos de funcionalidades disponíveis
+
+- **Unidades de Saúde**: cadastrar, buscar, editar e excluir informações públicas e fictícias.
+- **Avisos e Campanhas**: criar e gerenciar comunicados demonstrativos.
+- **Calendário de Ações**: registrar e organizar ações comunitárias fictícias.
+- **Guia de serviços, favoritos e painel**: funções da versão inicial.
+
+Os formulários demonstrativos utilizam `localStorage`: **não compartilham registros entre dispositivos e não podem ser usados operacionalmente**. Não registre dados de pacientes. A próxima fase incluirá autenticação, administração multi-município e dados persistidos com regras seguras.
+
+## Publicar no Firebase Hosting (alternativa futura)
 
 ```bash
 npm install -g firebase-tools
