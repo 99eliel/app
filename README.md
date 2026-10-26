@@ -2,6 +2,12 @@
 
 Protótipo público em **GitHub Pages** e início do núcleo multi-município com **Firebase Authentication + Cloud Firestore**. O ConectaSaúde é uma iniciativa independente, não um sistema oficial de prefeitura. **Não cadastrar pacientes, prontuários, diagnósticos, CPF ou outros dados clínicos/pessoais de saúde.**
 
+## Entrada do GitHub Pages
+
+O repositório está atualmente publicado a partir da raiz da branch `main`. O arquivo `/index.html` redireciona para o aplicativo em `/docs/`, mantendo a rota selecionada (`#administracao`, etc.). A presença do `/.nojekyll` evita que o GitHub Pages transforme o README na página inicial.
+
+Assim, basta abrir **https://99eliel.github.io/app/**. A pasta `docs/` continua contendo toda a aplicação, sem duplicação de arquivos.
+
 ## Acesso ao site
 
 - Repositório: https://github.com/99eliel/app

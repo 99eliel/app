@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ConectaSaúde — Abrindo aplicativo</title>
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#0b2431">
+  <meta http-equiv="refresh" content="0; url=./docs/">
+  <script>
+    // A origem do GitHub Pages publica a raiz da branch. A aplicação está em /docs/.
+    // Conservar a seção atual (#servicos, #administracao etc.) durante o redirecionamento.
+    const url = new URL("./docs/", window.location.href);
+    url.search = window.location.search;
+    url.hash = window.location.hash;
+    window.location.replace(url.href);
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center;
+      background: #f4f8f8; color: #193a3e; font-family: system-ui, sans-serif; }
+    main { max-width: 480px; text-align: center; padding: 32px; }
+    h1 { font-size: 1.6rem; }
+    a { color: #087866; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ConectaSaúde</h1>
+    <p>Estamos abrindo o aplicativo...</p>
+    <p><a href="./docs/">Toque aqui para entrar caso o redirecionamento não ocorra.</a></p>
+  </main>
+</body>
+</html>
