@@ -4,7 +4,7 @@ Protótipo público em **GitHub Pages** e início do núcleo multi-município co
 
 ## Entrada do GitHub Pages
 
-O repositório está atualmente publicado a partir da raiz da branch `main`. O arquivo `/index.html` redireciona para o aplicativo em `/docs/`, mantendo a rota selecionada (`#administracao`, etc.). A presença do `/.nojekyll` evita que o GitHub Pages transforme o README na página inicial.
+O repositório está atualmente publicado a partir da raiz da branch `main`. O arquivo `/index.html` abre a interface do ConectaSaúde diretamente, carregando os arquivos compartilhados da pasta `/docs/` pela tag HTML `<base href="./docs/">`. O arquivo `/.nojekyll` evita que o GitHub Pages gere a página inicial a partir do README.
 
 Assim, basta abrir **https://99eliel.github.io/app/**. A pasta `docs/` continua contendo toda a aplicação, sem duplicação de arquivos.
 
