@@ -1,6 +1,116 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Controle do produto: superadministradores são provisionados manualmente
+    // no console. É intencional não permitir que usuários elevem a própria função.
+    function loggedIn() {
+      return request.auth != null;
+    }
+    function platformAdmin() {
+      return loggedIn()
+        && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/platformAdmins/$(request.auth.uid)).data.enabled == true;
+    }
+    function isMember(cityId) {
+      return loggedIn()
+        && exists(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.enabled == true
+        && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.role in ['admin','editor'];
+    }
+    function canEdit(cityId) {
+      return platformAdmin() || isMember(cityId);
+    }
+    function cityActive(cityId) {
+      return get(/databases/$(database)/documents/municipalities/$(cityId)).data.active == true;
+    }
+    function validCity(data) {
+      return data.keys().hasOnly(['name','state','active','createdAt','updatedAt'])
+        && data.keys().hasAll(['name','state','active','createdAt','updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 85
+        && data.state is string && data.state.matches('^[A-Z]{2}$')
+        && data.active is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function validUnit(data) {
+      return data.keys().hasOnly(['name','type','district','address','hours','phone','published','createdAt','updatedAt'])
+        && data.keys().hasAll(['name','type','district','address','hours','phone','published','createdAt','updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 90
+        && data.type in ['UBS','UPA','Farmácia','Laboratório','Outro']
+        && data.district is string && data.district.size() <= 80
+        && data.address is string && data.address.size() <= 180
+        && data.hours is string && data.hours.size() <= 120
+        && data.phone is string && data.phone.size() <= 50
+        && data.published is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function validNotice(data) {
+      return data.keys().hasOnly(['title','kind','description','published','createdAt','updatedAt'])
+        && data.keys().hasAll(['title','kind','description','published','createdAt','updatedAt'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 100
+        && data.kind in ['Comunicado','Campanha','Serviço','Evento']
+        && data.description is string && data.description.size() > 0 && data.description.size() <= 800
+        && data.published is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function validEvent(data) {
+      return data.keys().hasOnly(['title','date','time','place','description','published','createdAt','updatedAt'])
+        && data.keys().hasAll(['title','date','time','place','description','published','createdAt','updatedAt'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 90
+        && data.date is string && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.time is string && data.time.size() <= 5
+        && data.place is string && data.place.size() <= 120
+        && data.description is string && data.description.size() <= 400
+        && data.published is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    match /platformAdmins/{userId} {
+      allow get: if loggedIn() && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /municipalities/{cityId} {
+      allow get, list: if resource.data.active == true || platformAdmin();
+      allow create: if platformAdmin() && validCity(request.resource.data);
+      allow update: if platformAdmin() && validCity(request.resource.data)
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /members/{userId} {
+        allow get: if platformAdmin() || (loggedIn() && request.auth.uid == userId);
+        allow list: if platformAdmin();
+        allow create, update: if platformAdmin()
+          && request.resource.data.keys().hasOnly(['role','enabled','updatedAt'])
+          && request.resource.data.keys().hasAll(['role','enabled','updatedAt'])
+          && request.resource.data.role in ['admin','editor']
+          && request.resource.data.enabled is bool
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if platformAdmin();
+      }
+
+      match /units/{recordId} {
+        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEdit(cityId) && validUnit(request.resource.data);
+        allow update: if canEdit(cityId) && validUnit(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+      match /notices/{recordId} {
+        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEdit(cityId) && validNotice(request.resource.data);
+        allow update: if canEdit(cityId) && validNotice(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+      match /events/{recordId} {
+        allow get, list: if canEdit(cityId) || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEdit(cityId) && validEvent(request.resource.data);
+        allow update: if canEdit(cityId) && validEvent(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

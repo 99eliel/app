@@ -1,0 +1,34 @@
+name: Validar portal
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxe dos módulos JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in docs/*.js; do
+            echo "Verificando $f"
+            node --input-type=module --check < "$f"
+          done
+      - name: Confirmar arquivos do GitHub Pages
+        shell: bash
+        run: |
+          test -s docs/index.html
+          test -s docs/styles.css
+          test -s docs/app.js
+          test -s docs/firebase.js
+          test -s docs/network.js
+          test -s docs/admin.js
+          test -s firestore.rules

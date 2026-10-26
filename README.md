@@ -1,62 +1,100 @@
-# ConectaSaúde — protótipo web
+# ConectaSaúde — plataforma independente de serviços de saúde
 
-Plataforma independente de serviços e orientação em saúde, em desenvolvimento. Esta é uma demonstração de interface, **sem dados reais de pacientes e sem integração com sistemas da prefeitura**.
+Protótipo público em **GitHub Pages** e início do núcleo multi-município com **Firebase Authentication + Cloud Firestore**. O ConectaSaúde é uma iniciativa independente, não um sistema oficial de prefeitura. **Não cadastrar pacientes, prontuários, diagnósticos, CPF ou outros dados clínicos/pessoais de saúde.**
 
-## Estrutura
+## Acesso ao site
 
-- `docs/`: site estático responsivo, pronto para Firebase Hosting.
-- `docs/app.js`: interface, navegação, buscas e dados **demonstrativos**.
-- `docs/firebase.js`: configuração do Firebase e Analytics sob consentimento.
-- `firebase.json` / `.firebaserc`: deploy no projeto Firebase `conectesaude-1`.
-- `firestore.rules`: acesso negado até definirmos autenticação e regras por organização.
+- Repositório: https://github.com/99eliel/app
+- GitHub Pages (após ativação em Settings → Pages, main, /docs): https://99eliel.github.io/app/
+- Todos os arquivos do site estão em `docs/`. Alterações em `main` serão disponibilizadas pelo Pages após o build.
+- Para rodar localmente: `npx serve docs` ou Live Server. Não abrir módulos diretamente via file://.
 
-## Rodar localmente
+## Recursos existentes
 
-É necessário usar um servidor HTTP local (não `file://`) para carregar módulos JavaScript.
+- Página inicial, guia de serviços e orientações;
+- Favoritos e checklist **somente no navegador local**;
+- Exemplos locais de unidades, avisos e calendário (demonstração);
+- Painel visual profissional com números fictícios;
+- **Rede municipal**: consulta dados publicados de municípios ativos, com filtros e pesquisa;
+- **Administração**: login Google, cadastro de municípios, ativação/desativação, CRUD (criar/editar/publicar/despublicar) de unidades, avisos e ações; concessão de acesso por UID ao município para administradores da plataforma;
+- Layout responsivo, tema escuro e acessibilidade inicial.
 
-```bash
-npx serve docs
-```
+Os três primeiros módulos locais são separados do conteúdo real: visitantes conseguem simular cadastros apenas no próprio aparelho; os registros públicos autenticados ficam no Firestore.
 
-Ou use a extensão Live Server do VS Code apontando para `docs/index.html`.
+## Configuração necessária no Firebase `conectesaude-1`
 
-## GitHub Pages (publicação temporária)
+**As etapas abaixo precisam ser executadas por quem administra o Firebase. O GitHub Pages NÃO publica Firestore Rules nem configura Auth.** Até essa configuração, a aba Rede municipal pode exibir uma mensagem informando que não foi possível consultar o banco.
 
-O site está na pasta `docs/` para funcionar como GitHub Pages sem processo de compilação.
+### 1. Habilitar autenticação
 
-1. No repositório, abra **Settings → Pages**.
-2. Em **Build and deployment**, escolha **Deploy from a branch**.
-3. Selecione branch **main** e diretório **/docs**, depois **Save**.
-4. Aguarde a publicação em `https://99eliel.github.io/app/` (apenas depois da ativação do Pages).
+No Firebase Console → Authentication → Sign-in method:
 
-As próximas alterações em `docs/` são publicadas automaticamente após o commit em `main`.
+- Ative o provedor **Google**.
+- Em Settings → Authorized domains, cadastre `99eliel.github.io` (não a URL com /app).
+- Considere usar domínio personalizado de sua titularidade antes do uso real.
 
-## Blocos de funcionalidades disponíveis
+### 2. Criar Firestore e publicar regras
 
-- **Unidades de Saúde**: cadastrar, buscar, editar e excluir informações públicas e fictícias.
-- **Avisos e Campanhas**: criar e gerenciar comunicados demonstrativos.
-- **Calendário de Ações**: registrar e organizar ações comunitárias fictícias.
-- **Guia de serviços, favoritos e painel**: funções da versão inicial.
+No Firebase Console → Firestore Database, crie o banco no modo de produção (não habilite regras públicas irrestritas).
 
-Os formulários demonstrativos utilizam `localStorage`: **não compartilham registros entre dispositivos e não podem ser usados operacionalmente**. Não registre dados de pacientes. A próxima fase incluirá autenticação, administração multi-município e dados persistidos com regras seguras.
-
-## Publicar no Firebase Hosting (alternativa futura)
+No diretório local do repositório:
 
 ```bash
 npm install -g firebase-tools
 firebase login
 firebase use conectesaude-1
-firebase deploy --only hosting
+firebase deploy --only firestore:rules
 ```
 
-**Atenção:** o comando publica o site, mas não cria banco de dados ou libera dados médicos. O Firebase Analytics é opcional e iniciado apenas após consentimento do usuário.
+O arquivo `firestore.rules` protege por município, separa conteúdo publicado e privado, não permite criação de administradores pelo navegador e bloqueia todas as outras coleções.
+
+**Não deployar regras sem revisar** em conjunto com a configuração do seu Firebase. Para uso operacional, criar testes automatizados de regras e passar por revisão de segurança. O modelo atual destina-se a conteúdo institucional público, não a informações de saúde individuais.
+
+### 3. Primeiro administrador (provisionamento manual obrigatório)
+
+1. Acesse `https://99eliel.github.io/app/#administracao`.
+2. Entre com Google; se o login funcionar, a página mostrará o seu **UID**.
+3. No Console do Firestore, crie a coleção `platformAdmins`.
+4. Crie um documento cujo **ID seja exatamente o seu UID do Firebase Authentication**.
+5. Adicione o campo booleano `enabled` com valor `true`.
+6. Atualize o navegador ou saia e entre novamente.
+
+O acesso administrativo nunca é concedido apenas por ter uma conta Google. **NÃO criar `platformAdmins` em código público nem flexibilizar as regras para realizar o primeiro acesso.**
+
+### 4. Primeiro município e publicações
+
+- Acesse Administração e cadastre um município (inicialmente inativo).
+- Selecione a cidade e cadastre unidades, avisos e ações.
+- Marque **Publicar para os cidadãos** no registro ou use o botão **Publicar**.
+- Quando estiver pronto, clique em **Ativar município**.
+- Confira o conteúdo na aba **Rede municipal**, de preferência em uma janela anônima.
+- Para outra pessoa administrar essa cidade, ela deve primeiro entrar com Google e lhe passar seu UID; então você pode conceder permissão como editor ou administrador municipal.
+
+### 5. Testes de segurança antes de qualquer piloto real
+
+- Usuário deslogado lê apenas municípios ativos e registros publicados.
+- Visitante não escreve em nenhuma coleção.
+- Um usuário autenticado sem permissão não escreve.
+- Editor da cidade A não altera cidade B.
+- Rascunhos não são visíveis ao público.
+- Não é possível criar a própria função de superadministrador.
+- Verificar permissões com Firebase Emulator Suite e testes automatizados, antes de divulgar o sistema como funcional em produção.
+
+## Organização técnica
+
+- `docs/app.js`: navegação e páginas informativas;
+- `docs/modules.js`: blocos com armazenamento local, somente demonstração;
+- `docs/network.js`: catálogo público por município, lendo Firestore;
+- `docs/admin.js`: interface administrativa protegida por Auth + regras de Firestore;
+- `docs/firebase.js`: inicialização do SDK Firebase, Auth, Firestore e Analytics opcional;
+- `firestore.rules`: autorização no servidor; `firebase.json` referencia essas regras.
+
+A configuração `firebaseConfig` é pública por natureza e não é uma chave de administração. Nunca adicionar tokens secretos ou credenciais de service accounts neste repositório.
 
 ## Próximas etapas
 
-1. Validar nome/marca e conteúdo do site.
-2. Cadastrar municípios/unidades de forma configurável (multi-tenant).
-3. Definir responsáveis pelo tratamento de dados, LGPD, autenticação e autorização por função.
-4. Criar serviços reais por município; integrar apenas quando autorizado.
-5. Empacotar e testar com Capacitor para Android e iOS.
-
-**Não cadastre dados pessoais ou clínicos neste protótipo.** Os números, campanhas e atividades apresentados na gestão são fictícios e estão marcados como simulação.
+1. Testar a autenticação, a criação de uma cidade e as regras no Emulator Suite.
+2. Criar perfis de acesso e gestão de membros mais completos, com possibilidade de revogação.
+3. Criar política de privacidade, processos de suporte, logs e monitoramento.
+4. Integrar serviços de municípios com autorização formal e sem dados pessoais no protótipo.
+5. Empacotar, compilar e testar Android/iOS com Capacitor quando a plataforma estiver definida.

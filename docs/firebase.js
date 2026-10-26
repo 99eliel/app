@@ -2,6 +2,8 @@
 // NÃO incluir chaves privadas ou service accounts aqui.
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAnalytics, isSupported, logEvent } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqL7QuNRyofwb_KsiKZxfbRaAFYK3VOac",
@@ -14,6 +16,8 @@ const firebaseConfig = {
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // Importado dinamicamente apenas se o visitante aceitar Analytics.
 export async function enableAnalytics() {
@@ -23,4 +27,4 @@ export async function enableAnalytics() {
   return true;
 }
 
-export { app, firebaseConfig };
+export { app, auth, db, firebaseConfig };
