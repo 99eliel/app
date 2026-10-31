@@ -87,3 +87,13 @@ Esta etapa não cria o bundle Android nem publica o aplicativo. Serviços clíni
 - Testes de contas pessoais novas: https://support.google.com/googleplay/android-developer/answer/14151465?hl=pt-BR
 - Exclusão de contas: https://support.google.com/googleplay/android-developer/answer/13327111?hl=pt-BR
 - TWA e Digital Asset Links: https://developer.chrome.com/docs/android/trusted-web-activity/quick-start
+
+## Exigências adicionais para aplicativo de saúde
+
+No Play Console, preencher **Política → Conteúdo do app → Apps de saúde**, inclusive em testes fechados. Para o ConectaSaúde, avaliar as categorias que realmente aparecerem na versão enviada, como **Serviços e administração de saúde**, **Prevenção de doenças e saúde pública** e, se aplicável, **Educação e referências médicas**.
+
+Se não for enquadrado como dispositivo médico, a descrição do app deve deixar claro que ele **não é dispositivo médico e não diagnostica, trata, cura nem previne doenças**, além de recomendar a orientação de profissionais de saúde para decisões clínicas. Isso deve refletir o uso real do aplicativo.
+
+O ConectaSaúde é uma plataforma independente: **não se apresentar como aplicativo oficial de prefeitura, SUS ou governo sem autorização documental formal**. Caso a distribuição venha a ser feita sob afiliação governamental, pode ser exigida comprovação e um formulário de aviso prévio.
+
+Fonte: https://support.google.com/googleplay/android-developer/answer/14738291?hl=pt-BR
