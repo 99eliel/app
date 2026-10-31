@@ -18,7 +18,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in docs/*.js; do
+          for f in docs/*.js sw.js; do
             echo "Verificando $f"
             node --input-type=module --check < "$f"
           done
@@ -39,3 +39,31 @@ jobs:
           test -s docs/municipal-portal.js
           test -s index.html
           test -s firestore.rules
+          test -s docs/account.js
+          test -s docs/notice-utils.js
+          test -s docs/sw.js
+          test -s sw.js
+
+  firestore-security:
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 12
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configurar Java para emulador
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Instalar Firebase Tools e biblioteca de testes
+        run: |
+          npm init -y >/dev/null
+          npm install --no-save --no-package-lock firebase@11 @firebase/rules-unit-testing@4 firebase-tools@14
+      - name: Compilar regras e testar permissões no emulador Firestore
+        run: |
+          npx firebase emulators:exec --project demo-conectasaude-ci --only firestore "node --test tests/firestore-emulator.test.mjs"
