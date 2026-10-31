@@ -115,183 +115,82 @@ service cloud.firestore {
       }
     }
 
-    // Catálogo estrutural inspirado no ConecteBR, sem importar dados da cidade.
-    function moduleIdValid(moduleId) {
-      return moduleId in ['upa','esf','agendamentos','triagem','laboratorio','farmacia',
-       'escalas','campanhas','cetec','servicos','engenharia','meioambiente',
-       'educacao','esportes','infraestrutura'];
+
+    // Módulos configuráveis, sem conteúdo pré-cadastrado.
+    function validModuleId(id) {
+      return id in ['upa','esf','agendamentos','triagem','laboratorio','farmacia',
+        'escalas','campanhas','cetec','servicos','engenharia','meioambiente',
+        'educacao','esportes','infraestrutura'];
     }
-    function moduleEnabled(cityId,moduleId) {
-      return exists(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(moduleId))
-        && get(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(moduleId)).data.enabled == true;
+    function moduleEnabled(cityId,id) {
+      return exists(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(id))
+        && get(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(id)).data.enabled == true;
     }
-    function moduleSettingsValid(data) {
-      return data.keys().hasOnly(['enabled','updatedAt'])
-        && data.keys().hasAll(['enabled','updatedAt'])
-        && data.enabled is bool
-        && data.updatedAt is timestamp;
+    function validSetting(d) {
+      return d.keys().hasAll(['enabled','updatedAt'])
+        && d.keys().hasOnly(['enabled','updatedAt'])
+        && d.enabled is bool && d.updatedAt is timestamp;
     }
-    function entryValid(data,moduleId) {
-      return data.keys().hasOnly(['moduleKey','title','description','details','address',
-          'phone','hours','link','published','createdAt','updatedAt'])
-        && data.keys().hasAll(['moduleKey','title','description','details','address',
-          'phone','hours','link','published','createdAt','updatedAt'])
-        && data.moduleKey == moduleId
-        && data.title is string && data.title.size() > 0 && data.title.size() <= 100
-        && data.description is string && data.description.size() <= 600
-        && data.details is string && data.details.size() <= 1000
-        && data.address is string && data.address.size() <= 180
-        && data.phone is string && data.phone.size() <= 50
-        && data.hours is string && data.hours.size() <= 160
-        && data.link is string && data.link.size() <= 300
-        && (data.link == '' || data.link.matches('^https://[^ ]+
-      allow get: if loggedIn() && request.auth.uid == userId;
-      allow list, create, update, delete: if false;
+    function validEntry(d,id) {
+      return d.keys().hasAll(['moduleKey','title','description','details','address','phone','hours','link','published','createdAt','updatedAt'])
+        && d.keys().hasOnly(['moduleKey','title','description','details','address','phone','hours','link','published','createdAt','updatedAt'])
+        && d.moduleKey == id
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 100
+        && d.description is string && d.description.size() <= 600
+        && d.details is string && d.details.size() <= 1000
+        && d.address is string && d.address.size() <= 180
+        && d.phone is string && d.phone.size() <= 50
+        && d.hours is string && d.hours.size() <= 160
+        && d.link is string && d.link.size() <= 300
+        && (d.link == '' || d.link.matches('^https://.+$'))
+        && d.published is bool
+        && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    function validUpa(d) {
+      return d.keys().hasAll(['queue','roomStatus','clinician','pediatrician','week','published','updatedAt'])
+        && d.keys().hasOnly(['queue','roomStatus','clinician','pediatrician','week','published','updatedAt'])
+        && (d.queue == null || (d.queue is int && d.queue >= 0 && d.queue <= 9999))
+        && d.roomStatus in ['unknown','available','occupied']
+        && d.clinician is string && d.clinician.size() <= 100
+        && d.pediatrician is string && d.pediatrician.size() <= 100
+        && d.week is map
+        && d.week.keys().hasAll(['segunda','terca','quarta','quinta','sexta','sabado','domingo'])
+        && d.week.keys().hasOnly(['segunda','terca','quarta','quinta','sexta','sabado','domingo'])
+        && d.week.get('segunda','') is string && d.week.get('segunda','').size() <= 160
+        && d.week.get('terca','') is string && d.week.get('terca','').size() <= 160
+        && d.week.get('quarta','') is string && d.week.get('quarta','').size() <= 160
+        && d.week.get('quinta','') is string && d.week.get('quinta','').size() <= 160
+        && d.week.get('sexta','') is string && d.week.get('sexta','').size() <= 160
+        && d.week.get('sabado','') is string && d.week.get('sabado','').size() <= 160
+        && d.week.get('domingo','') is string && d.week.get('domingo','').size() <= 160
+        && d.published is bool && d.updatedAt is timestamp;
+    }
+    function validRequest(d) {
+      return d.keys().hasAll(['ownerUid','targetId','status','createdAt','updatedAt'])
+        && d.keys().hasOnly(['ownerUid','targetId','status','createdAt','updatedAt'])
+        && d.ownerUid is string && d.ownerUid.size() > 0 && d.ownerUid.size() <= 128
+        && d.targetId is string && d.targetId.size() > 0 && d.targetId.size() <= 128
+        && d.status in ['pending','confirmed','completed','canceled']
+        && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    function citizenCreate(cityId,moduleId,d) {
+      return loggedIn() && cityActive(cityId) && moduleEnabled(cityId,moduleId)
+        && currentLicense(cityId) && validRequest(d)
+        && d.ownerUid == request.auth.uid && d.status == 'pending'
+        && exists(/databases/$(database)/documents/municipalities/$(cityId)/moduleEntries/$(moduleId)/items/$(d.targetId))
+        && get(/databases/$(database)/documents/municipalities/$(cityId)/moduleEntries/$(moduleId)/items/$(d.targetId)).data.published == true;
+    }
+    function unchangedRequestFields(old,d) {
+      return validRequest(d) && d.ownerUid == old.ownerUid
+        && d.targetId == old.targetId && d.createdAt == old.createdAt
+        && d.diff(old).affectedKeys().hasOnly(['status','updatedAt']);
+    }
+    function citizenCancel(old,d) {
+      return loggedIn() && old.ownerUid == request.auth.uid
+        && old.status == 'pending' && d.status == 'canceled'
+        && unchangedRequestFields(old,d);
     }
 
-    match /municipalities/{cityId} {
-      allow get, list: if platformAdmin() || resource.data.active == true;
-      allow create: if platformAdmin() && validCity(request.resource.data);
-      allow update: if platformAdmin() && validCity(request.resource.data)
-                    && request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if false;
-
-      match /members/{userId} {
-        allow get: if platformAdmin() || (loggedIn() && request.auth.uid == userId);
-        allow list: if platformAdmin();
-        allow create, update: if platformAdmin()
-          && request.resource.data.keys().hasOnly(['role','enabled','updatedAt'])
-          && request.resource.data.keys().hasAll(['role','enabled','updatedAt'])
-          && request.resource.data.role in ['admin','editor']
-          && request.resource.data.enabled is bool
-          && request.resource.data.updatedAt is timestamp;
-        allow delete: if platformAdmin();
-      }
-
-      match /moduleSettings/{moduleId} {
-        allow get, list: if canView(cityId)
-          || (cityActive(cityId) && resource.data.enabled == true);
-        allow create, update: if canEdit(cityId) && moduleIdValid(moduleId)
-          && moduleSettingsValid(request.resource.data);
-        allow delete: if false;
-      }
-      match /moduleEntries/{moduleId}/items/{entryId} {
-        allow get, list: if canView(cityId)
-          || (cityActive(cityId) && moduleEnabled(cityId,moduleId)
-            && resource.data.published == true);
-        allow create: if canEdit(cityId) && moduleIdValid(moduleId)
-          && entryValid(request.resource.data,moduleId);
-        allow update: if canEdit(cityId) && moduleIdValid(moduleId)
-          && entryValid(request.resource.data,moduleId)
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if false;
-      }
-      match /moduleStatus/{moduleId} {
-        allow get: if canView(cityId)
-          || (moduleId == 'upa' && cityActive(cityId)
-            && moduleEnabled(cityId,'upa') && resource.data.published == true);
-        allow list: if false;
-        allow create, update: if moduleId == 'upa' && canEdit(cityId)
-          && validUpaStatus(request.resource.data);
-        allow delete: if false;
-      }
-      match /appointmentRequests/{requestId} {
-        allow get, list: if canView(cityId)
-          || (loggedIn() && resource.data.ownerUid == request.auth.uid);
-        allow create: if citizenCreateRequest(cityId,'agendamentos',request.resource.data);
-        allow update: if citizenCancel(resource.data,request.resource.data)
-          || teamChangeRequest(cityId,resource.data,request.resource.data);
-        allow delete: if false;
-      }
-      match /courseRegistrations/{requestId} {
-        allow get, list: if canView(cityId)
-          || (loggedIn() && resource.data.ownerUid == request.auth.uid);
-        allow create: if citizenCreateRequest(cityId,'cetec',request.resource.data);
-        allow update: if citizenCancel(resource.data,request.resource.data)
-          || teamChangeRequest(cityId,resource.data,request.resource.data);
-        allow delete: if false;
-      }
-      match /units/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validUnit(request.resource.data);
-        allow update: if canEdit(cityId) && validUnit(request.resource.data)
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if false;
-      }
-      match /notices/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validNotice(request.resource.data);
-        allow update: if canEdit(cityId) && validNotice(request.resource.data)
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if false;
-      }
-      match /events/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validEvent(request.resource.data);
-        allow update: if canEdit(cityId) && validEvent(request.resource.data)
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if false;
-      }
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-))
-        && data.published is bool
-        && data.createdAt is timestamp && data.updatedAt is timestamp;
-    }
-    function validUpaStatus(data) {
-      return data.keys().hasOnly(['queue','roomStatus','clinician','pediatrician','week','published','updatedAt'])
-        && data.keys().hasAll(['queue','roomStatus','clinician','pediatrician','week','published','updatedAt'])
-        && (data.queue == null || (data.queue is int && data.queue >= 0 && data.queue <= 9999))
-        && data.roomStatus in ['unknown','available','occupied']
-        && data.clinician is string && data.clinician.size() <= 100
-        && data.pediatrician is string && data.pediatrician.size() <= 100
-        && data.week is map
-        && data.week.keys().hasAll(['segunda','terca','quarta','quinta','sexta','sabado','domingo'])
-        && data.week.keys().hasOnly(['segunda','terca','quarta','quinta','sexta','sabado','domingo'])
-        && data.week.get('segunda','') is string && data.week.get('segunda','').size() <= 160
-        && data.week.get('terca','') is string && data.week.get('terca','').size() <= 160
-        && data.week.get('quarta','') is string && data.week.get('quarta','').size() <= 160
-        && data.week.get('quinta','') is string && data.week.get('quinta','').size() <= 160
-        && data.week.get('sexta','') is string && data.week.get('sexta','').size() <= 160
-        && data.week.get('sabado','') is string && data.week.get('sabado','').size() <= 160
-        && data.week.get('domingo','') is string && data.week.get('domingo','').size() <= 160
-        && data.published is bool && data.updatedAt is timestamp;
-    }
-    function validPublicRequest(data) {
-      return data.keys().hasOnly(['ownerUid','targetId','status','createdAt','updatedAt'])
-        && data.keys().hasAll(['ownerUid','targetId','status','createdAt','updatedAt'])
-        && data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128
-        && data.targetId is string && data.targetId.size() > 0 && data.targetId.size() <= 128
-        && data.status in ['pending','confirmed','completed','canceled']
-        && data.createdAt is timestamp && data.updatedAt is timestamp;
-    }
-    function citizenCreateRequest(cityId,section,data) {
-      return loggedIn() && cityActive(cityId) && moduleEnabled(cityId,section)
-        && currentLicense(cityId) && validPublicRequest(data)
-        && data.ownerUid == request.auth.uid && data.status == 'pending'
-        && exists(/databases/$(database)/documents/municipalities/$(cityId)/moduleEntries/$(section)/items/$(data.targetId))
-        && get(/databases/$(database)/documents/municipalities/$(cityId)/moduleEntries/$(section)/items/$(data.targetId)).data.published == true;
-    }
-    function changeRequestStatus(data,old) {
-      return validPublicRequest(data)
-        && data.ownerUid == old.ownerUid
-        && data.targetId == old.targetId
-        && data.createdAt == old.createdAt
-        && data.diff(old).affectedKeys().hasOnly(['status','updatedAt']);
-    }
-    function citizenCancel(old,data) {
-      return loggedIn() && request.auth.uid == old.ownerUid
-        && old.status == 'pending' && data.status == 'canceled'
-        && changeRequestStatus(data,old);
-    }
-    function teamChangeRequest(cityId,old,data) {
-      return canEdit(cityId) && changeRequestStatus(data,old);
-    }
     match /platformAdmins/{userId} {
       allow get: if loggedIn() && request.auth.uid == userId;
       allow list, create, update, delete: if false;
@@ -314,6 +213,53 @@ service cloud.firestore {
           && request.resource.data.enabled is bool
           && request.resource.data.updatedAt is timestamp;
         allow delete: if platformAdmin();
+      }
+
+
+      match /moduleSettings/{moduleId} {
+        allow get, list: if canView(cityId)
+          || (cityActive(cityId) && resource.data.enabled == true);
+        allow create, update: if canEdit(cityId) && validModuleId(moduleId)
+          && validSetting(request.resource.data);
+        allow delete: if false;
+      }
+      match /moduleEntries/{moduleId}/items/{entryId} {
+        allow get, list: if canView(cityId)
+          || (cityActive(cityId) && moduleEnabled(cityId,moduleId)
+             && resource.data.published == true);
+        allow create: if canEdit(cityId) && validModuleId(moduleId)
+          && validEntry(request.resource.data,moduleId);
+        allow update: if canEdit(cityId) && validModuleId(moduleId)
+          && validEntry(request.resource.data,moduleId)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+      match /moduleStatus/{moduleId} {
+        allow get: if canView(cityId)
+          || (moduleId == 'upa' && cityActive(cityId)
+              && moduleEnabled(cityId,'upa') && resource.data.published == true);
+        allow list: if false;
+        allow create, update: if moduleId == 'upa' && canEdit(cityId)
+          && validUpa(request.resource.data);
+        allow delete: if false;
+      }
+      match /appointmentRequests/{id} {
+        allow get, list: if canView(cityId)
+          || (loggedIn() && resource.data.ownerUid == request.auth.uid);
+        allow create: if citizenCreate(cityId,'agendamentos',request.resource.data);
+        allow update: if (canEdit(cityId)
+          && unchangedRequestFields(resource.data,request.resource.data))
+          || citizenCancel(resource.data,request.resource.data);
+        allow delete: if false;
+      }
+      match /courseRegistrations/{id} {
+        allow get, list: if canView(cityId)
+          || (loggedIn() && resource.data.ownerUid == request.auth.uid);
+        allow create: if citizenCreate(cityId,'cetec',request.resource.data);
+        allow update: if (canEdit(cityId)
+          && unchangedRequestFields(resource.data,request.resource.data))
+          || citizenCancel(resource.data,request.resource.data);
+        allow delete: if false;
       }
 
       match /units/{recordId} {
