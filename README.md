@@ -167,7 +167,7 @@ A próxima etapa do ConecteBR já foi adaptada ao ConectaSaúde:
 
 Não há números ou cadastros fictícios. O aplicativo exibe ausência de dados até você cadastrar.
 
-**Atenção às regras:** a versão de `firestore.rules` atualmente salva no repositório passou por uma migração incompleta e **não deve ser implantada sem correção e validação**. As regras devem ser conferidas com a versão que você publicou manualmente no console; GitHub Pages não altera as regras existentes. Antes de usar em operação, faça testes completos no Firebase Emulator Suite, incluindo duas cidades e perfis distintos.
+**Segurança e deploy:** o arquivo `firestore.rules` foi corrigido e validado com o Firebase Emulator Suite. A automação testa os papéis de Superadmin, cidadão e editor, isolamento de municípios e suspensão de licença. O repositório NÃO publica as regras no Firebase: após cada alteração aprovada, o proprietário precisa publicá-las manualmente no Console ou pela CLI.
 
 ## Ampliação do ConecteBR: contas, cartazes e PWA
 
@@ -182,6 +182,13 @@ A aplicação continua multi-município: nenhum dado do ConecteBR foi copiado. C
 
 ### Atenção: regras do Firestore
 
-O arquivo `firestore.rules` salvo no repositório contém um trecho duplicado de uma atualização anterior e **não está pronto para deploy**. Use as regras corrigidas que foram revisadas manualmente no Firebase Console até que o arquivo seja sincronizado e compilado por meio do Firebase Emulator Suite. **Não execute `firebase deploy --only firestore:rules` a partir deste checkout enquanto esse problema persistir.**
+O `firestore.rules` versionado no GitHub foi corrigido, e o workflow `Validar portal` executa testes de compilação e permissões no emulador. Para atualizar o ambiente de produção, publique a versão revisada no projeto `conectesaude-1`. **GitHub Pages e GitHub Actions não alteram as regras do banco de produção automaticamente.** Não guarde dados reais de pacientes sem avaliação legal e de segurança específica.
 
 Os testes automáticos de JS não substituem os testes das regras de segurança. Antes de uso com cidadãos reais, revisar isolamento por município, permissões, privacidade, coleta e retenção de dados, aviso de finalidade e os processos assistenciais.
+
+
+## Testes automáticos de permissões do Firestore
+
+O workflow `Validar portal` possui agora uma etapa `firestore-security` que inicializa o **Firebase Emulator Suite** com as regras atuais. Os testes em `tests/firestore-emulator.test.mjs` verificam: leitura de licenças pelo Superadmin, bloqueio de acesso a documentos privados, impossibilidade de autoelevação de permissões, isolamento entre municípios, bloqueio de edição com licença suspensa e criação de solicitações pelo próprio cidadão.
+
+Se qualquer regra falhar nos testes, o workflow ficará vermelho para que a incompatibilidade seja corrigida **antes** de copiar ou publicar as regras. O resultado do emulador não substitui uma auditoria completa, mas evita que alterações inválidas passem despercebidas.
