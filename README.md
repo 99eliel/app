@@ -168,3 +168,20 @@ A próxima etapa do ConecteBR já foi adaptada ao ConectaSaúde:
 Não há números ou cadastros fictícios. O aplicativo exibe ausência de dados até você cadastrar.
 
 **Atenção às regras:** a versão de `firestore.rules` atualmente salva no repositório passou por uma migração incompleta e **não deve ser implantada sem correção e validação**. As regras devem ser conferidas com a versão que você publicou manualmente no console; GitHub Pages não altera as regras existentes. Antes de usar em operação, faça testes completos no Firebase Emulator Suite, incluindo duas cidades e perfis distintos.
+
+## Ampliação do ConecteBR: contas, cartazes e PWA
+
+Foram adaptados novos fluxos da plataforma antiga:
+
+- **Minha conta** (`/#conta`): login Google, cadastro e acesso por e-mail e senha, recuperação de senha, solicitação de verificação de e-mail e consulta das próprias solicitações e inscrições. O login com e-mail exige habilitar **E-mail/senha** em Firebase Authentication → Sign-in method. Não há cadastro de prontuários.
+- **Campanhas e avisos**: cada município publica avisos, com cartaz opcional informado por **URL pública HTTPS diretamente para arquivo JPG/PNG/WEBP**. O cidadão visualiza cartazes em pop-up e marca como visto no navegador. A gestão pode retirar os avisos publicados do ar sem excluí-los. **O upload de imagem ainda não está implementado**: para subir um arquivo, será necessário integrar Storage com regras próprias.
+- **Pedidos e cursos**: filtros por andamento (pendente, confirmado, concluído e cancelado); prevenção de pedidos simultâneos no mesmo formulário e tentativa de evitar duplicidade de inscrições num curso por conta.
+- **PWA**: `sw.js` usa cache somente de arquivos locais do site e tenta atualizar o conteúdo da interface ao reconectar. Dados de pacientes, dados do Firestore e credenciais **não são armazenados pelo service worker**. Operações autenticadas exigem internet.
+
+A aplicação continua multi-município: nenhum dado do ConecteBR foi copiado. Cada área começa vazia, e precisa de configuração e publicação pela administração.
+
+### Atenção: regras do Firestore
+
+O arquivo `firestore.rules` salvo no repositório contém um trecho duplicado de uma atualização anterior e **não está pronto para deploy**. Use as regras corrigidas que foram revisadas manualmente no Firebase Console até que o arquivo seja sincronizado e compilado por meio do Firebase Emulator Suite. **Não execute `firebase deploy --only firestore:rules` a partir deste checkout enquanto esse problema persistir.**
+
+Os testes automáticos de JS não substituem os testes das regras de segurança. Antes de uso com cidadãos reais, revisar isolamento por município, permissões, privacidade, coleta e retenção de dados, aviso de finalidade e os processos assistenciais.

@@ -26,7 +26,7 @@ const checklist = [
   {id:"vacinas",label:"Consultar o calendário de vacinação atualizado"}
 ];
 
-const routes = {"inicio":"Visão geral","servicos":"Serviços de saúde","rede":"Rede municipal","gestao-modulos":"Gerenciar módulos","administracao":"Administração","assinaturas":"Licenças e assinaturas","modulos":"Módulos da plataforma","unidades":"Unidades de saúde","avisos":"Avisos e campanhas","calendario":"Calendário de ações","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
+const routes = {"inicio":"Visão geral","conta":"Minha conta","servicos":"Serviços de saúde","rede":"Rede municipal","gestao-modulos":"Gerenciar módulos","administracao":"Administração","assinaturas":"Licenças e assinaturas","modulos":"Módulos da plataforma","unidades":"Unidades de saúde","avisos":"Avisos e campanhas","calendario":"Calendário de ações","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
 const $ = selector => document.querySelector(selector);
 const safeGet = key => {try{return localStorage.getItem(key)}catch{return null}};
 const safeSet = (key,value) => {try{localStorage.setItem(key,value)}catch{console.info("Armazenamento indisponível.")}};
@@ -129,7 +129,7 @@ function about(){
  <div class="panel"><h3>Privacidade por princípio</h3><p>Não coletamos informações clínicas. Favoritos, checklist e preferências ficam somente no navegador. O Analytics é opcional e requer sua autorização.</p><div class="button-row"><button type="button" class="btn btn-outline" data-action="consent-settings">Preferências do Analytics</button><button type="button" class="btn btn-outline" data-action="clear-local">Apagar dados locais</button></div></div></section>
  ${notice("Esta iniciativa é independente e não representa um canal oficial de atendimento de prefeitura. O uso de dados reais exige autorizações e cuidados legais específicos.")}`;
 }
-const views={"inicio":home,"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"gestao-modulos":()=>'<div class="loading">Carregando gestão dos módulos...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":()=>'<div class="loading">Carregando indicadores municipais...</div>',"sobre":about};
+const views={"inicio":home,"conta":()=>'<div class="loading">Carregando sua conta...</div>',"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"gestao-modulos":()=>'<div class="loading">Carregando gestão dos módulos...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":()=>'<div class="loading">Carregando indicadores municipais...</div>',"sobre":about};
 let renderVersion=0;
 let routeController;
 function render(){
@@ -163,6 +163,11 @@ function render(){
    if(valid())mountBilling(container,toast,currentController.signal);
   }).catch(error=>showModuleError(error,currentController.signal));
  }
+ if(current==="conta"){
+  void import("./account.js").then(({mountAccount})=>{
+   if(valid())mountAccount(container,toast,currentController.signal);
+  }).catch(error=>showModuleError(error,currentController.signal));
+ }
  if(current==="gestao"){
   void import("./municipal-reports.js").then(({mountReports})=>{
    if(valid())mountReports(container,toast,currentController.signal);
@@ -172,7 +177,7 @@ function render(){
 function showModuleError(error,signal){
  if(signal?.aborted)return;
  console.error("Falha ao carregar módulo:",error);
- if(["rede","gestao-modulos","administracao","assinaturas","gestao"].includes(route())){
+ if(["rede","gestao-modulos","administracao","assinaturas","gestao","conta"].includes(route())){
   $("#view").innerHTML='<div class="disclaimer"><strong>Não foi possível carregar esta área.</strong> Verifique a conexão, as configurações do Firebase e atualize a página.</div>';
  }
 }
@@ -259,3 +264,21 @@ modules.setup({refresh:render,toast});
 render();
 if(!state.consent)showConsent();
 else if(state.consent==="accepted")void enableAnalyticsIfConsented();
+if("serviceWorker" in navigator && location.protocol==="https:"){
+ window.addEventListener("load",async()=>{
+  try{
+   const workerUrl=new URL("../sw.js",import.meta.url);
+   const scopeUrl=new URL("../",import.meta.url);
+   const registration=await navigator.serviceWorker.register(workerUrl,{scope:scopeUrl.pathname});
+   registration.addEventListener("updatefound",()=>{
+    const worker=registration.installing;
+    worker?.addEventListener("statechange",()=>{
+     if(worker.state==="installed"&&navigator.serviceWorker.controller){
+      toast("Nova versão disponível. Atualize quando terminar suas alterações.");
+     }
+    });
+   });
+   await registration.update();
+  }catch(error){console.warn("PWA indisponível:",error?.message||error);}
+ });
+}

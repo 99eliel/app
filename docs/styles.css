@@ -174,3 +174,28 @@ body.dark .auth-error h3,body.dark .auth-error p,body.dark .auth-error a{color:#
 body.dark .report-stat-icon{background:#215045;color:#abecce}
 @media(max-width:850px){.report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-summary-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.report-grid{grid-template-columns:1fr 1fr;gap:9px}.report-stat{padding:13px;min-height:150px}.report-stat strong{font-size:25px}.report-actions{width:100%}.report-actions .btn{flex:1}}
+
+/* Central de avisos e área do cidadão */
+.portal-poster{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line);margin:12px 0}
+.portal-highlight{display:flex;align-items:flex-start;flex-direction:column;gap:10px;border-radius:15px;background:var(--surface);border:1px solid var(--line);padding:21px}
+.portal-highlight h3{font-size:21px;margin:0;line-height:1.3}.portal-highlight p{font-size:12px;color:var(--muted);line-height:1.7;margin:0}
+.portal-notice-dialog{width:min(92vw,560px);max-height:88vh;border:0;border-radius:18px;padding:0;color:var(--text);background:var(--surface);box-shadow:0 20px 90px rgba(0,0,0,.35)}
+.portal-notice-dialog::backdrop{background:rgba(5,22,30,.7)}
+.portal-notice-modal{padding:23px;display:flex;flex-direction:column;gap:14px}
+.portal-notice-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.portal-notice-top .btn{min-width:40px}.portal-notice-modal h2{font-size:24px;margin:0}.portal-notice-modal p{font-size:13px;line-height:1.65;margin:0}
+.portal-notice-modal img{width:100%;max-height:46vh;object-fit:contain;background:var(--surface-alt);border-radius:12px}
+.account-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,.8fr);gap:17px;align-items:start}
+.account-auth h2{margin:20px 0 8px}.account-auth .module-form{margin-top:15px}
+.account-auth .filter-bar{flex-wrap:wrap}.account-auth .btn{margin:5px 0}
+.account-separator{color:var(--muted);font-size:12px;text-align:center;margin:17px 0}
+.account-about{display:flex;flex-direction:column;gap:14px}.account-about h3{font-size:20px;margin:0}
+.account-about p{font-size:12px;color:var(--muted);line-height:1.7;margin:0}
+.account-summary{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:19px;background:var(--surface);border:1px solid var(--line);border-radius:15px;margin:17px 0}
+.account-summary strong{font-size:14px}.account-summary p{font-size:11px;color:var(--muted);margin:6px 0}
+.account-records{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.account-record{display:flex;flex-direction:column;align-items:flex-start;gap:9px}
+.account-record h3{font-size:16px;margin:0}.account-record p,.account-record small{font-size:11px;color:var(--muted);margin:0}
+.portal-directory-toolbar select{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:10px}
+@media(max-width:850px){.account-layout{grid-template-columns:1fr}}
+@media(max-width:620px){.account-records{grid-template-columns:1fr}.account-summary{align-items:flex-start;flex-direction:column}.portal-notice-modal{padding:16px}}

@@ -1,6 +1,36 @@
 // Mensagens públicas e específicas do Firebase Authentication.
 // Não registra tokens, credenciais nem dados pessoais.
 const suggestions = {
+  "auth/email-already-in-use": {
+    title: "E-mail já cadastrado",
+    message: "Já existe uma conta usando este endereço de e-mail.",
+    fix: "Use Entrar ou Recuperar senha em vez de criar outra conta."
+  },
+  "auth/invalid-credential": {
+    title: "Dados de login não conferem",
+    message: "Não foi possível validar a conta com o e-mail e a senha informados.",
+    fix: "Confira os dados ou utilize Recuperar senha."
+  },
+  "auth/wrong-password": {
+    title: "Não foi possível entrar",
+    message: "O Firebase não aceitou as credenciais informadas.",
+    fix: "Confira seu e-mail e senha ou recupere o acesso."
+  },
+  "auth/weak-password": {
+    title: "Senha muito fraca",
+    message: "A senha informada não atende aos requisitos mínimos.",
+    fix: "Utilize pelo menos 6 caracteres e prefira uma senha forte e exclusiva."
+  },
+  "auth/too-many-requests": {
+    title: "Muitas tentativas de acesso",
+    message: "O Firebase limitou temporariamente novas tentativas.",
+    fix: "Aguarde um pouco e tente novamente. Evite repetir várias vezes."
+  },
+  "auth/user-disabled": {
+    title: "Conta desativada",
+    message: "Esta conta foi desativada na autenticação.",
+    fix: "Contate o responsável pela organização se precisar de acesso."
+  },
   "auth/unauthorized-domain": {
     title: "Domínio do site não autorizado",
     message: "O Google não pode autenticar neste endereço até você cadastrar o domínio do GitHub Pages no Firebase.",
