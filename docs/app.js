@@ -26,7 +26,7 @@ const checklist = [
   {id:"vacinas",label:"Consultar o calendário de vacinação atualizado"}
 ];
 
-const routes = {"inicio":"Visão geral","servicos":"Serviços de saúde","rede":"Rede municipal","administracao":"Administração","assinaturas":"Licenças e assinaturas","modulos":"Módulos da plataforma","unidades":"Unidades de saúde","avisos":"Avisos e campanhas","calendario":"Calendário de ações","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
+const routes = {"inicio":"Visão geral","servicos":"Serviços de saúde","rede":"Rede municipal","gestao-modulos":"Gerenciar módulos","administracao":"Administração","assinaturas":"Licenças e assinaturas","modulos":"Módulos da plataforma","unidades":"Unidades de saúde","avisos":"Avisos e campanhas","calendario":"Calendário de ações","meu-espaco":"Meu espaço","orientacoes":"Orientações","gestao":"Painel profissional","sobre":"Sobre o projeto"};
 const $ = selector => document.querySelector(selector);
 const safeGet = key => {try{return localStorage.getItem(key)}catch{return null}};
 const safeSet = (key,value) => {try{localStorage.setItem(key,value)}catch{console.info("Armazenamento indisponível.")}};
@@ -60,11 +60,11 @@ function home(){
 return `<section class="hero"><div class="hero-copy"><span class="eyebrow">✦ CUIDADO QUE CONECTA</span><h1>Uma saúde mais próxima. <span>Uma vida mais simples.</span></h1><p>Informações, orientações e serviços de saúde reunidos em um só lugar. Um novo jeito de aproximar pessoas e cuidado.</p><div class="hero-actions"><a href="#servicos" class="btn btn-primary">Explorar serviços ↗</a><a href="#sobre" class="btn btn-light">Conheça o projeto</a></div></div><div class="hero-visual" aria-hidden="true"><div class="hero-orbit"><span class="hero-heart">✚</span></div><div class="float-pill float-pill--one">✦ Informação acessível</div><div class="float-pill float-pill--two">♡ Cuidado para todos</div></div></section>
 ${notice()}
 <section class="network-promo"><div><span class="section-kicker">INFORMAÇÕES POR MUNICÍPIO</span><h2>Encontre os serviços da sua cidade</h2><p>Conheça os municípios cadastrados e consulte unidades, campanhas e ações publicadas pelas equipes autorizadas.</p></div><a href="#rede" class="btn btn-solid">Explorar rede municipal ↗</a></section>
-<div class="section-head"><div><span class="section-kicker">NOVOS BLOCOS</span><h2>Explore as funcionalidades</h2><p>Comece por três áreas que você já pode experimentar.</p></div><a href="#modulos" class="text-link">Todos os módulos ↗</a></div>
-<section class="module-grid module-grid--compact" aria-label="Novos módulos de demonstração">
- <a href="#unidades" class="module-card"><span class="module-bubble" aria-hidden="true">🏥</span><strong class="module-card-title">Unidades de saúde</strong><span class="module-card-description">Cadastre e encontre locais de atendimento.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
- <a href="#avisos" class="module-card"><span class="module-bubble" aria-hidden="true">📣</span><strong class="module-card-title">Avisos e campanhas</strong><span class="module-card-description">Organize comunicados e campanhas.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
- <a href="#calendario" class="module-card"><span class="module-bubble" aria-hidden="true">🗓️</span><strong class="module-card-title">Calendário de ações</strong><span class="module-card-description">Crie datas de atividades comunitárias.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
+<div class="section-head"><div><span class="section-kicker">NOVOS BLOCOS</span><h2>Explore as funcionalidades</h2><p>Cada município começa vazio e configura seus próprios serviços.</p></div><a href="#modulos" class="text-link">Todos os módulos ↗</a></div>
+<section class="module-grid module-grid--compact" aria-label="Funcionalidades municipais">
+ <a href="#rede" class="module-card"><span class="module-bubble" aria-hidden="true">🏥</span><strong class="module-card-title">Serviços do município</strong><span class="module-card-description">UPA, ESF, laboratório, farmácia, escalas e campanhas, após cadastro.</span><span class="module-card-foot">Explorar <span aria-hidden="true">↗</span></span></a>
+ <a href="#gestao-modulos" class="module-card"><span class="module-bubble" aria-hidden="true">⚙</span><strong class="module-card-title">Configurar módulos</strong><span class="module-card-description">Ative áreas e cadastre dados da sua cidade com login autorizado.</span><span class="module-card-foot">Gerenciar <span aria-hidden="true">↗</span></span></a>
+ <a href="#administracao" class="module-card"><span class="module-bubble" aria-hidden="true">👥</span><strong class="module-card-title">Administração</strong><span class="module-card-description">Organizações, unidades, usuários e permissões por município.</span><span class="module-card-foot">Abrir <span aria-hidden="true">↗</span></span></a>
 </section>
 <section class="stats-grid" aria-label="Áreas da plataforma">
 <div class="stat-card"><span class="stat-icon stat-icon--mint">▦</span><h3>Serviços</h3><p>Explore orientações de atendimento.</p></div>
@@ -115,19 +115,11 @@ function guidance(){
  <div class="panel"><h3>Não espere por uma resposta do aplicativo.</h3><p>Se houver perigo imediato, ligue <strong>192 (SAMU)</strong> ou procure o serviço de urgência disponível na sua região.</p></div>`;
 }
 function management(){
- const chart=[["Jan",55],["Fev",66],["Mar",61],["Abr",79],["Mai",74],["Jun",91]];
- return `<div class="page-heading"><div><span class="section-kicker">VISÃO PROFISSIONAL</span><h1>Mais clareza para cuidar melhor.</h1><p>Uma prévia de como indicadores podem apoiar o trabalho de gestores e equipes.</p></div><span class="pill">▤ PAINEL DEMONSTRATIVO</span></div>
- <div class="disclaimer"><strong>⚠ Simulação com dados inteiramente fictícios.</strong> Todos os números, gráficos e atividades são exemplos de interface. Nenhum dado foi extraído de Pontalina ou de sistemas públicos.</div>
- <section class="metrics-grid"><div class="metric"><span>Atendimentos acompanhados</span><strong>1.284</strong><small>↗ +12% fictício</small></div><div class="metric"><span>Demandas organizadas</span><strong>96%</strong><small>↗ +4% fictício</small></div><div class="metric"><span>Ações preventivas</span><strong>342</strong><small>↗ +8% fictício</small></div></section>
- <div class="section-head"><div><h2>Visão integrada</h2><p>Indicadores meramente ilustrativos.</p></div></div>
- <section class="split-grid"><div class="panel"><h3>Acompanhamentos fictícios</h3><p>Gráfico de exemplo, sem qualquer dado real.</p><div class="bar-chart" role="img" aria-label="Gráfico fictício de janeiro a junho">${chart.map(([m,v])=>`<div class="bar-column"><div class="bar-shape" style="height:${v}%"></div><small>${m}</small></div>`).join("")}</div></div>
- <div class="panel"><h3>Próximas possibilidades</h3>
- <div class="step-row"><span class="step-number">✦</span><div><strong>Informações em um lugar só</strong><small>Painéis claros e fáceis de interpretar.</small></div></div>
- <div class="step-row"><span class="step-number">✦</span><div><strong>Alertas inteligentes</strong><small>Funcionalidade futura sujeita a validação.</small></div></div>
- <div class="step-row"><span class="step-number">✦</span><div><strong>Municípios independentes</strong><small>Indicadores e perfis específicos por cidade.</small></div></div></div></section>
- <div class="section-head"><div><h2>Organização de demandas</h2></div></div>
- <div class="panel" style="overflow-x:auto"><table class="table-like"><thead><tr><th>Área fictícia</th><th>Exemplo de atividade</th><th style="text-align:right">Situação</th></tr></thead><tbody><tr><td>Atenção básica</td><td>Revisão de indicadores</td><td><span class="tag">Simulado</span></td></tr><tr><td>Campanhas</td><td>Planejamento de divulgação</td><td><span class="tag">Simulado</span></td></tr><tr><td>Serviços</td><td>Atualização de informações</td><td><span class="tag warn">Pendente fictício</span></td></tr></tbody></table></div>
- <div class="section-head"><div><h2>Segurança antes de dados reais</h2></div></div><div class="feature-panel"><h3>Evolução responsável.</h3><p>Antes de conectar dados municipais, será necessário implementar autenticação, isolamento entre municípios, auditoria e regras de acesso compatíveis com a LGPD.</p><a href="#sobre" class="btn btn-outline">Conheça a proposta ↗</a></div>`;
+ return `<div class="page-heading"><div><span class="section-kicker">RELATÓRIOS E GESTÃO</span><h1>Painel municipal</h1><p>Os números começam vazios. Cadastre um município, ative os módulos e adicione informações para gerar indicadores reais.</p></div><span class="pill">Sem dados fictícios</span></div>
+ <div class="module-grid module-grid--compact"><a class="module-card" href="#gestao-modulos"><span class="module-bubble">⚙</span><strong class="module-card-title">Gestão dos módulos</strong><span class="module-card-description">Ative áreas, cadastre serviços, cursos, plantões e informações públicas.</span><span class="module-card-foot">Abrir gestão ↗</span></a>
+ <a class="module-card" href="#administracao"><span class="module-bubble">👥</span><strong class="module-card-title">Municípios e permissões</strong><span class="module-card-description">Administre municípios e usuários autorizados.</span><span class="module-card-foot">Abrir administração ↗</span></a>
+ <a class="module-card" href="#assinaturas"><span class="module-bubble">◈</span><strong class="module-card-title">Licenciamento</strong><span class="module-card-description">Planos, situação contratual e vencimentos.</span><span class="module-card-foot">Abrir licenças ↗</span></a></div>
+ <div class="empty-state"><strong>Nenhum relatório gerado ainda</strong><p>Quando os registros municipais existirem, implementaremos indicadores operacionais reais, respeitando as permissões e as políticas de dados.</p></div>`;
 }
 function about(){
  return `<div class="page-heading"><div><span class="section-kicker">SOBRE O PROJETO</span><h1>Uma plataforma independente, feita para aproximar.</h1><p>O ConectaSaúde é um produto em construção, pensado para servir diferentes municípios com identidade própria.</p></div></div>
@@ -137,7 +129,7 @@ function about(){
  <div class="panel"><h3>Privacidade por princípio</h3><p>Não coletamos informações clínicas. Favoritos, checklist e preferências ficam somente no navegador. O Analytics é opcional e requer sua autorização.</p><div class="button-row"><button type="button" class="btn btn-outline" data-action="consent-settings">Preferências do Analytics</button><button type="button" class="btn btn-outline" data-action="clear-local">Apagar dados locais</button></div></div></section>
  ${notice("Esta iniciativa é independente e não representa um canal oficial de atendimento de prefeitura. O uso de dados reais exige autorizações e cuidados legais específicos.")}`;
 }
-const views={"inicio":home,"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":management,"sobre":about};
+const views={"inicio":home,"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"gestao-modulos":()=>'<div class="loading">Carregando gestão dos módulos...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":management,"sobre":about};
 let renderVersion=0;
 let routeController;
 function render(){
@@ -156,9 +148,9 @@ function render(){
   if(active)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current");
  });
  const valid=()=>!currentController.signal.aborted&&version===renderVersion&&container.isConnected;
- if(current==="rede"){
-  void import("./network.js").then(({mountNetwork})=>{
-   if(valid())void mountNetwork(container,currentController.signal).catch(error=>showModuleError(error,currentController.signal));
+ if(current==="rede"||current==="gestao-modulos"){
+  void import("./municipal-portal.js").then(({mountPortal})=>{
+   if(valid())mountPortal(container,toast,currentController.signal,current==="gestao-modulos");
   }).catch(error=>showModuleError(error,currentController.signal));
  }
  if(current==="administracao"){
@@ -175,7 +167,7 @@ function render(){
 function showModuleError(error,signal){
  if(signal?.aborted)return;
  console.error("Falha ao carregar módulo:",error);
- if(["rede","administracao","assinaturas"].includes(route())){
+ if(["rede","gestao-modulos","administracao","assinaturas"].includes(route())){
   $("#view").innerHTML='<div class="disclaimer"><strong>Não foi possível carregar esta área.</strong> Verifique a conexão, as configurações do Firebase e atualize a página.</div>';
  }
 }

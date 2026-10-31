@@ -129,3 +129,27 @@ A conta Superadmin precisa estar provisionada manualmente em `platformAdmins/{ui
 Ao clicar em **Entrar com Google**, a interface agora mostra o código de erro do Firebase com uma explicação e passos de resolução. O login com Google e as permissões de Superadmin são etapas distintas: um usuário pode autenticar e ainda receber `permission-denied` se não estiver cadastrado.
 
 Para o GitHub Pages, confirme em **Firebase Console → Authentication → Settings → Authorized domains** a presença de **`99eliel.github.io`** (sem `https://` e sem `/app/`). Em **Sign-in method**, habilite o provedor Google no projeto **`conectesaude-1`**. Essas configurações são feitas pelo proprietário do Firebase e não podem ser aplicadas por um commit no GitHub Pages.
+
+## Funcionalidades adaptadas do ConecteBR — sem pré-cadastro
+
+O menu **Gerenciar módulos** permite ativar ou desativar os módulos de cada
+município e cadastrar seu conteúdo do zero. O menu **Rede municipal** exibe
+apenas módulos ativados e conteúdos publicados. Também há formulário para
+atualização da UPA, solicitações simples de consultas e inscrições em cursos,
+com identificação pelo UID da conta Google e sem campo para dados clínicos.
+
+Módulos incluídos: UPA, ESF, agendamentos, orientação ao paciente, laboratório,
+farmácia, escalas, campanhas, cursos/CETEC, serviços municipais, engenharia,
+meio ambiente, educação, esportes e infraestrutura.
+
+Não foram importadas as escalas, os cursos, as unidades e as contas de
+Pontalina. Todos os módulos começam vazios e desativados, aguardando que
+um administrador os configure e publique conteúdo.
+
+**Lembre-se:** os módulos exigem novas regras em `firestore.rules`,
+que precisam de revisão e publicação no Firebase. A publicação do GitHub
+Pages, por si só, não libera a escrita no banco. A nova interface não deve
+ser considerada homologada para dados reais de pacientes.
+
+Leia o [plano de migração](CONECTEBR_MIGRATION.md) para consultar a
+relação exata de funcionalidades aproveitadas e ainda pendentes.

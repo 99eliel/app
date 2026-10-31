@@ -104,3 +104,39 @@ body.dark .license-badge.bad{background:#512e34;color:#ffa3ad}body.dark .license
 .auth-error a{font-size:12px;font-weight:800;color:#a03d39;text-decoration:underline}
 body.dark .auth-error{background:#412b2d;border-color:#704b4f}
 body.dark .auth-error h3,body.dark .auth-error p,body.dark .auth-error a{color:#ffbaba}
+
+/* ConecteBR → ConectaSaúde: estrutura municipal modular, sem registros predefinidos */
+.portal-choose{display:flex;gap:13px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:15px 19px;margin:18px 0}
+.portal-choose label{font-size:11px;font-weight:800;color:var(--muted)}
+.portal-choose select{min-height:42px;max-width:420px;min-width:min(300px,100%);border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:10px;padding:8px 13px}
+.portal-shell{display:grid;grid-template-columns:minmax(245px,.8fr) minmax(0,2fr);align-items:start;gap:18px}
+.portal-nav{position:sticky;top:20px;max-height:78vh;overflow:auto;scrollbar-width:thin}
+.portal-nav>h3{font-size:15px;margin:0 0 15px}.portal-module-list{display:grid;gap:7px}
+.portal-module{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border-radius:12px;padding:10px;border:1px solid transparent;color:var(--text);background:transparent;transition:background .18s,border-color .18s}
+.portal-module:hover,.portal-module.active{background:var(--surface-alt);border-color:var(--line)}
+.portal-module.active{border-color:#4bbd98}
+.portal-module .module-bubble{height:37px;width:37px;border-radius:10px;font-size:17px}
+.portal-module>span:nth-child(2){flex:1;min-width:0}
+.portal-module strong,.portal-module small{display:block;line-height:1.5}
+.portal-module strong{font-size:11px}.portal-module small{font-size:10px;color:var(--muted)}
+.portal-module>.license-badge{font-size:9px}
+.portal-content{min-width:0;display:grid;gap:15px}
+.portal-content>.empty-state{min-height:220px}
+.portal-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.portal-heading>div{display:flex;gap:13px;align-items:center;min-width:0}.portal-heading h2{font-size:21px;margin:5px 0}
+.portal-heading p{color:var(--muted);font-size:11px;line-height:1.6;margin:0}.portal-heading .section-kicker{font-size:9px}
+.portal-content>.data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.portal-block>h3{font-size:16px;margin:0 0 15px}
+.portal-upa-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.portal-upa-grid .panel h2{font-size:25px;margin:8px 0 11px}
+.portal-upa-grid .panel p{margin:0}
+.portal-week{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.portal-week>div{border:1px solid var(--line);background:var(--surface-alt);border-radius:11px;padding:12px;display:grid;gap:7px}
+.portal-week strong{font-size:11px}.portal-week span{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.portal-request-list{display:grid;gap:9px}
+.portal-request{display:flex;justify-content:space-between;align-items:center;gap:15px;border:1px solid var(--line);border-radius:12px;padding:13px}
+.portal-request strong{font-size:12px}.portal-request p,.portal-request small{font-size:11px;color:var(--muted);margin:6px 0 0}
+.portal-request select{background:var(--bg);color:var(--text);border-radius:10px;border:1px solid var(--line);padding:9px;font-size:11px}
+.portal-content .input-field textarea{background:var(--bg)}
+@media(max-width:1150px){.portal-shell{grid-template-columns:1fr}.portal-nav{position:static;max-height:none}.portal-module-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:740px){.portal-choose{align-items:flex-start;flex-direction:column}.portal-choose select{width:100%;min-width:0}.portal-upa-grid,.portal-week{grid-template-columns:1fr}.portal-content>.data-grid,.portal-module-list{grid-template-columns:1fr}.portal-heading{align-items:flex-start;flex-wrap:wrap}.portal-heading>.btn{width:100%}.portal-request{align-items:flex-start;flex-direction:column}}

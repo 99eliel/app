@@ -32,26 +32,20 @@ function overviewCard(icon,title,text,path,status){
  return `<a href="#${path}" class="module-card"><span class="module-bubble" aria-hidden="true">${icon}</span><span class="module-card-title">${title}</span><span class="module-card-description">${text}</span><span class="module-card-foot"><span>${status}</span><span aria-hidden="true">↗</span></span></a>`;
 }
 function overview(){
- return `${head("BLOCOS DE FUNCIONALIDADES","Uma plataforma que cresce com você.","Cada área funciona de forma independente. Começaremos pelos serviços públicos e, em seguida, poderemos conectar os módulos que dependem de autenticação e autorização.")}
- ${demoNote}
+ return `${head("BLOCOS DA PLATAFORMA","Uma plataforma configurável para cada município.","Reaproveitamos o fluxo do ConecteBR em módulos independentes. Nenhuma cidade, unidade, curso, aviso ou profissional é criado automaticamente.")}
  <div class="module-grid">
- ${overviewCard("🏥","Unidades e locais de atendimento","Cadastre e pesquise unidades, contatos, endereços e horários ilustrativos.","unidades","Cadastro local")}
- ${overviewCard("📣","Avisos e campanhas","Crie comunicados e divulgue conteúdos em um mural de demonstração.","avisos","Mural local")}
- ${overviewCard("🗓️","Calendário de ações","Organize datas de eventos e ações comunitárias com registros locais.","calendario","Calendário local")}
- ${overviewCard("🩺","Guia de serviços","Navegue por temas de saúde, salve favoritos e encontre orientações.","servicos","Disponível")}
- ${overviewCard("♡","Meu espaço","Checklist geral e serviços favoritos no próprio dispositivo.","meu-espaco","Disponível")}
- ${overviewCard("📊","Painel profissional","Explore a proposta visual de indicadores para gestores.","gestao","Simulação")}
+ ${overviewCard("🏥","Portal do município","UPA, ESF, consultas, farmácia, laboratório, escalas e campanhas, conforme o cadastro municipal.","rede","Consulta pública")}
+ ${overviewCard("⚙","Configuração dos módulos","Ative as áreas desejadas e cadastre informações em branco, por município.","gestao-modulos","Acesso autorizado")}
+ ${overviewCard("👥","Municípios e usuários","Cadastre as organizações e autorize equipes e profissionais.","administracao","Gestão de acesso")}
+ ${overviewCard("◈","Licenças e assinaturas","Gerencie planos, vencimentos, carências e suspensão de edição.","assinaturas","Superadmin")}
+ ${overviewCard("🩺","Guia de saúde","Informações gerais de saúde, sem vínculo com dados municipais.","servicos","Conteúdo informativo")}
+ ${overviewCard("♡","Meu espaço","Favoritos e checklist pessoal armazenados somente no próprio navegador.","meu-espaco","Armazenamento local")}
  </div>
- <div class="section-head"><div><span class="section-kicker">GESTÃO DA PLATAFORMA</span><h2>Áreas restritas</h2><p>Ferramentas protegidas por autenticação e regras de acesso no Firestore.</p></div></div>
- <div class="module-grid module-grid--compact">
- ${overviewCard("⚙","Administração municipal","Cadastre municípios, equipes, unidades, avisos e ações publicadas.","administracao","Login necessário")}
- ${overviewCard("◈","Assinaturas e licenças","Controle planos, mensalidades, vigência e suspensão do contrato.","assinaturas","Somente Superadmin")}
- ${overviewCard("⌖","Rede municipal","Consulte apenas os registros publicados de cidades habilitadas.","rede","Acesso público")}
- </div>
- <div class="section-head"><div><span class="section-kicker">EVOLUÇÃO CONTÍNUA</span><h2>Próximos blocos em estudo</h2></div></div>
- <div class="panel"><div class="step-row"><span class="step-number">01</span><div><strong>Consolidação e testes de segurança</strong><small>Login e estrutura multi-município criados; falta homologar permissões no Firebase.</small></div></div><div class="step-row"><span class="step-number">02</span><div><strong>Solicitações e agendamentos</strong><small>Dependem de fluxos reais, autorização institucional e integração segura.</small></div></div><div class="step-row"><span class="step-number">03</span><div><strong>Comunicação e notificações</strong><small>Informações relevantes por município, respeitando consentimentos.</small></div></div></div>`;
-}
-function unitCard(u){
+ <div class="section-head"><div><span class="section-kicker">FLUXOS DISPONÍVEIS</span><h2>Inspirados no ConecteBR</h2></div></div>
+ <div class="panel"><div class="step-row"><span class="step-number">01</span><div><strong>Ativação por município</strong><small>Habilite ou desabilite cada módulo conforme a necessidade da organização.</small></div></div>
+ <div class="step-row"><span class="step-number">02</span><div><strong>Cadastros vazios</strong><small>Inclua unidades, cursos, escalas, avisos e informações operacionais somente quando necessário.</small></div></div>
+ <div class="step-row"><span class="step-number">03</span><div><strong>Solicitações restritas</strong><small>Pedidos e inscrições identificados pela conta Google; nenhuma informação clínica deve ser inserida.</small></div></div></div>`;
+}function unitCard(u){
  const mapTitle=u.example?`<span class="pill">Fictícia</span>`:`<span class="pill">Cadastro local</span>`;
  return `<article class="data-card">
   <div class="data-card-top"><span class="module-bubble" aria-hidden="true">🏥</span>${mapTitle}</div>

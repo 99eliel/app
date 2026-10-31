@@ -35,5 +35,7 @@ jobs:
           test -s docs/admin.js
           test -s docs/billing.js
           test -s docs/license-core.js
+          test -s docs/module-catalog.js
+          test -s docs/municipal-portal.js
           test -s index.html
           test -s firestore.rules
