@@ -2,8 +2,9 @@
 // Gestão de módulos públicos, conteúdo, UPA, agendamentos e cursos.
 import {auth,db} from "./firebase.js";
 import {MODULES,MODULE_BY_ID,WEEK_DAYS,escapeText as E,validPublicUrl} from "./module-catalog.js";
+import {nextQueueValue,statusLabel,normalizeOperationalInfo,summarizeEsf,countRequestStatuses} from "./municipal-operations.js";
 import {GoogleAuthProvider,onAuthStateChanged,signInWithPopup} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import {collection,doc,getDoc,getDocs,addDoc,updateDoc,setDoc,query,where,serverTimestamp} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import {collection,doc,getDoc,getDocs,addDoc,updateDoc,setDoc,query,where,serverTimestamp,onSnapshot,runTransaction} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 const provider=new GoogleAuthProvider();
 const cityKey="cs_portal_city";
@@ -16,27 +17,41 @@ const block=(title,contents)=>`<section class="panel portal-block"><h3>${E(title
 const modulePath=(cityId,id)=>collection(db,"municipalities",cityId,"moduleEntries",id,"items");
 
 export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
- let user=auth.currentUser,platform=false,canManage=false,cities=[],cityId="",section="",settings=new Map(),entries=[],status=null,requests=[],courseRegistrations=[],editing="",loading=true,error="",statusMessage="",tab="content",latest=0;
+ let user=auth.currentUser,platform=false,cities=[],cityId="",section="",settings=new Map(),entries=[],status=null,requests=[],editing=null,loading=true,error="",statusMessage="",latest=0,esfQuery="";
+ let unsubscribeItems=null,unsubscribeUpa=null;
+ const stopLive=()=>{unsubscribeItems?.();unsubscribeUpa?.();unsubscribeItems=null;unsubscribeUpa=null;};
  const isAlive=()=>!signal?.aborted&&root.isConnected;
  const informSafe=msg=>{statusMessage=msg;inform(msg);};
- const selectedCity=()=>cities.find(c=>c.id===cityId);
- const enabled=m=>settings.get(m.id)?.enabled===true;
+  const enabled=m=>settings.get(m.id)?.enabled===true;
  const approved=m=>enabled(m)||adminMode;
  const activeSection=()=>MODULE_BY_ID[section];
  const loadingView=()=>header("Carregando município...","Consultando informações autorizadas.")+'<div class="panel"><p>Carregando...</p></div>';
  const chooseCity=()=>`<div class="portal-choose"><label for="portal_city">Município</label><select id="portal_city">${cities.map(c=>`<option value="${E(c.id)}" ${c.id===cityId?"selected":""}>${E(c.name)} · ${E(c.state)}${!c.active?" (não publicado)":""}</option>`).join("")}</select>${adminMode?`<span class="pill">${platform?"Superadmin":"Equipe autorizada"}</span>`:""}</div>`;
  const sections=()=>`<div class="portal-module-list">${MODULES.filter(approved).map(m=>`<button type="button" class="portal-module ${section===m.id?"active":""}" data-portal-module="${m.id}">${card(m)}<span><strong>${E(m.name)}</strong><small>${E(m.description)}</small></span>${adminMode?`<span class="license-badge ${enabled(m)?"good":"neutral"}">${enabled(m)?"Ativo":"Desligado"}</span>`:""}<span aria-hidden="true">›</span></button>`).join("")}</div>`;
  const currentEntries=()=>entries.filter(x=>x.moduleKey===section);
- const contents=()=>currentEntries().length?`<div class="data-grid">${currentEntries().map(x=>`<article class="data-card"><div class="data-card-top">${card(activeSection())}<span class="pill">${x.published?"Publicado":"Rascunho"}</span></div><h3>${E(x.title)}</h3><p class="data-caption">${E(x.description||"")}</p>${x.details?`<div class="data-detail"><strong>Informações</strong><span>${E(x.details)}</span></div>`:""}${x.hours?`<div class="data-detail"><strong>Horários</strong><span>${E(x.hours)}</span></div>`:""}${x.address?`<div class="data-detail"><strong>Local</strong><span>${E(x.address)}</span></div>`:""}${x.phone?`<div class="data-detail"><strong>Contato</strong><span>${E(x.phone)}</span></div>`:""}${validPublicUrl(x.link)?`<a class="text-link" href="${E(validPublicUrl(x.link))}" target="_blank" rel="noopener noreferrer">Site oficial ↗</a>`:""}${adminMode?`<div class="data-card-actions"><button class="btn btn-outline" type="button" data-portal-edit="${E(x.id)}">Editar</button><button class="btn btn-outline" type="button" data-portal-publish="${E(x.id)}">${x.published?"Retirar do ar":"Publicar"}</button></div>`:""}</article>`).join("")}</div>`:empty("Nenhuma informação cadastrada","Este módulo começa vazio. A equipe responsável poderá cadastrar e publicar informações posteriormente.");
+ const contents=(items=currentEntries())=>items.length?`<div class="data-grid">${items.map(x=>`<article class="data-card"><div class="data-card-top">${card(activeSection())}<span class="pill">${x.published?"Publicado":"Rascunho"}</span></div><h3>${E(x.title)}</h3><p class="data-caption">${E(x.description||"")}</p>${x.details?`<div class="data-detail"><strong>Informações</strong><span>${E(x.details)}</span></div>`:""}${x.hours?`<div class="data-detail"><strong>Horários</strong><span>${E(x.hours)}</span></div>`:""}${x.address?`<div class="data-detail"><strong>Local</strong><span>${E(x.address)}</span></div>`:""}${x.phone?`<div class="data-detail"><strong>Contato</strong><span>${E(x.phone)}</span></div>`:""}${validPublicUrl(x.link)?`<a class="text-link" href="${E(validPublicUrl(x.link))}" target="_blank" rel="noopener noreferrer">Site oficial ↗</a>`:""}${adminMode?`<div class="data-card-actions"><button class="btn btn-outline" type="button" data-portal-edit="${E(x.id)}">Editar</button><button class="btn btn-outline" type="button" data-portal-publish="${E(x.id)}">${x.published?"Retirar do ar":"Publicar"}</button></div>`:""}</article>`).join("")}</div>`:empty("Nenhuma informação cadastrada","Este módulo começa vazio. A equipe responsável poderá cadastrar e publicar informações posteriormente.");
+ const esfView=()=>{
+  const all=currentEntries();
+  const summary=summarizeEsf(all);
+  const text=esfQuery.trim().toLocaleLowerCase("pt-BR");
+  const hits=all.filter(x=>[x.title,x.address,x.hours,x.details,x.description].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(text)));
+  return `<section class="portal-overview-grid"><div class="panel"><span class="section-kicker">UNIDADES CADASTRADAS</span><strong>${summary.total}</strong></div>
+  ${adminMode?`<div class="panel"><span class="section-kicker">PUBLICADAS</span><strong>${summary.published}</strong></div><div class="panel"><span class="section-kicker">SEM HORÁRIO</span><strong>${summary.missingHours}</strong></div>`:""}</section>
+  <div class="portal-directory-toolbar"><label for="esfSearch">Buscar posto, bairro ou equipe</label><input type="search" id="esfSearch" placeholder="Pesquisar unidades..." value="${E(esfQuery)}"></div>
+  <div id="esfResults">${contents(hits)}</div>`;
+ };
  const editForm=()=>{
   const item=entries.find(x=>x.id===editing)||{};
-  return `<section class="form-panel" id="portalEdit"><span class="section-kicker">CADASTRO MUNICIPAL</span><h2>${item.id?"Editar informação":"Cadastrar informação"}</h2><form class="module-form" id="portalContentForm">${formInput("Título *","title",item.title||"",100,"text",true)}${formInput("Horário / escala","hours",item.hours||"",160)}${formInput("Local / endereço","address",item.address||"",180)}${formInput("Telefone institucional","phone",item.phone||"",50)}${formInput("Link público HTTPS","link",item.link||"",300)}<div class="input-field field-wide"><label for="portal_description">Resumo</label><textarea id="portal_description" name="description" maxlength="600" rows="3">${E(item.description||"")}</textarea></div><div class="input-field field-wide"><label for="portal_details">Informações adicionais</label><textarea id="portal_details" name="details" maxlength="1000" rows="4">${E(item.details||"")}</textarea></div><label class="admin-toggle field-wide"><input type="checkbox" name="published" ${item.published?"checked":""}> Disponibilizar no portal público</label><div class="form-actions"><button class="btn btn-solid" type="submit">Salvar informação</button><button class="btn btn-outline" type="button" data-portal-action="cancel-edit">Cancelar</button></div></form></section>`;
+  return `<section class="form-panel" id="portalEdit"><span class="section-kicker">CADASTRO MUNICIPAL</span><h2>${item.id?"Editar informação":"Cadastrar informação"}</h2><form class="module-form" id="portalContentForm">${formInput(section==="esf"?"Nome do posto / ESF *":"Título *","title",item.title||"",100,"text",true)}${formInput(section==="esf"?"Horário de atendimento":"Horário / escala","hours",item.hours||"",160)}${formInput(section==="esf"?"Endereço da unidade":"Local / endereço","address",item.address||"",180)}${formInput("Telefone institucional","phone",item.phone||"",50)}${formInput("Link público HTTPS","link",item.link||"",300)}<div class="input-field field-wide"><label for="portal_description">Resumo</label><textarea id="portal_description" name="description" maxlength="600" rows="3">${E(item.description||"")}</textarea></div><div class="input-field field-wide"><label for="portal_details">${section==="esf"?"Médico responsável e informações da equipe":"Informações adicionais"}</label><textarea id="portal_details" name="details" maxlength="1000" rows="4">${E(item.details||"")}</textarea></div><label class="admin-toggle field-wide"><input type="checkbox" name="published" ${item.published?"checked":""}> Disponibilizar no portal público</label><div class="form-actions"><button class="btn btn-solid" type="submit">Salvar informação</button><button class="btn btn-outline" type="button" data-portal-action="cancel-edit">Cancelar</button></div></form></section>`;
  };
  const upaView=()=>{
   if(!status&&!adminMode)return empty("A UPA ainda não publicou informações","A fila, a equipe de plantão e a escala serão exibidas após cadastro e publicação pela gestão.");
-  const queue=status?.queue??null,room=status?.roomStatus??"unknown",week=status?.week||{};
-  return `<section class="portal-upa-grid"><div class="panel"><span class="section-kicker">FILA INFORMADA PELA UNIDADE</span><h2>${queue===null?"A confirmar":String(queue)}</h2><p class="module-caption">Quantidade informada manualmente pela equipe. Não representa previsão de espera nem classificação de risco.</p></div><div class="panel"><span class="section-kicker">SITUAÇÃO DA SALA VERMELHA</span><h2>${room==="available"?"Informada como disponível":room==="occupied"?"Informada como ocupada":"Não informada"}</h2><p class="module-caption">Não indica disponibilidade de leitos nem substitui orientação de urgência.</p></div></section>
+  const operational=normalizeOperationalInfo(status);
+  const queue=operational.queue,room=operational.roomStatus,week=operational.week;
+  return `<section class="portal-upa-grid"><div class="panel"><span class="section-kicker">FILA INFORMADA PELA UNIDADE</span><h2>${queue===null?"A confirmar":String(queue)}</h2><p class="module-caption">Quantidade informada manualmente pela equipe. Não representa previsão de espera nem classificação de risco.</p>
+  ${adminMode&&queue!==null?`<div class="portal-queue-actions"><button class="btn btn-outline" type="button" data-queue-step="-1" ${queue===0?"disabled":""} aria-label="Registrar saída da fila">− Saída</button><button class="btn btn-solid" type="button" data-queue-step="1" ${queue===9999?"disabled":""} aria-label="Registrar entrada na fila">+ Entrada</button></div><p class="module-caption">Os ajustes são sincronizados com o Firestore; utilize apenas contagem operacional agregada.</p>`:""}</div><div class="panel"><span class="section-kicker">SITUAÇÃO DA SALA VERMELHA</span><h2>${room==="available"?"Informada como disponível":room==="occupied"?"Informada como ocupada":"Não informada"}</h2><p class="module-caption">Não indica disponibilidade de leitos nem substitui orientação de urgência.</p></div></section>
   <div class="data-grid"><div class="panel"><h3>Clínico de plantão</h3><p>${E(status?.clinician||"Não informado")}</p></div><div class="panel"><h3>Pediatria</h3><p>${E(status?.pediatrician||"Não informado")}</p></div><div class="panel"><h3>Atualização</h3><p>${status?.updatedAt?.toDate?.().toLocaleString("pt-BR")||"Não informada"}</p></div></div>
+  ${!status&&adminMode?'<div class="disclaimer">Ainda não há situação cadastrada para a UPA deste município. Preencha e salve o formulário abaixo para iniciar o acompanhamento.</div>':""}
   ${block("Escala semanal",`<div class="portal-week">${WEEK_DAYS.map(([key,label])=>`<div><strong>${label}</strong><span>${E(week[key]||"Não informado")}</span></div>`).join("")}</div>`)}
   ${adminMode?`<section class="form-panel"><h2>Atualizar dados da UPA</h2><form class="module-form" id="portalUpaForm"><div class="input-field"><label for="portal_queue">Quantidade atual na fila</label><input type="number" min="0" max="9999" name="queue" id="portal_queue" placeholder="Deixe vazio se não houver informação" value="${queue===null?"":queue}"></div><div class="input-field"><label for="portal_room">Sala vermelha (informação administrativa)</label><select id="portal_room" name="roomStatus"><option value="unknown" ${room==="unknown"?"selected":""}>Não informada</option><option value="available" ${room==="available"?"selected":""}>Informada como disponível</option><option value="occupied" ${room==="occupied"?"selected":""}>Informada como ocupada</option></select></div>${formInput("Clínico de plantão","clinician",status?.clinician||"",100)}${formInput("Pediatria","pediatrician",status?.pediatrician||"",100)}${WEEK_DAYS.map(([key,label])=>formInput(label,key,week[key]||"",160)).join("")}<label class="admin-toggle field-wide"><input type="checkbox" name="published" ${status?.published?"checked":""}> Publicar informações de plantão</label><div class="form-actions"><button class="btn btn-solid" type="submit">Salvar situação da UPA</button></div></form></section>`:""}`;
  };
@@ -51,7 +66,10 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   const mine=requests.filter(r=>r.ownerUid===user?.uid);
   return `${infoRequest(kind)}
   ${!adminMode?`<section class="panel"><h3>${isAppointment?"Solicitar atendimento":"Inscrever-se em curso"}</h3>${user?choices.length?`<form id="portalRequestForm" class="module-form"><div class="input-field field-wide"><label for="portal_target">${isAppointment?"Unidade de referência":"Curso"}</label><select name="targetId" id="portal_target" required><option value="">Escolha uma opção</option>${choices.map(x=>`<option value="${E(x.id)}">${E(x.title)}</option>`).join("")}</select></div><div class="form-actions"><button class="btn btn-solid" type="submit">${isAppointment?"Enviar solicitação":"Registrar interesse"}</button></div></form>`:"<p>Não há opções publicadas. A equipe precisa cadastrar uma unidade ou curso primeiro.</p>":`<p>Entre com Google para acompanhar solicitações vinculadas à sua conta.</p><button type="button" class="btn btn-solid" data-portal-action="sign-in">Entrar com Google</button>`}</section>`:""}
-  ${block(adminMode?"Solicitações recebidas":"Minhas solicitações",(adminMode?requests:mine).length?`<div class="portal-request-list">${(adminMode?requests:mine).map(r=>`<article class="portal-request"><div><strong>${E(choices.find(c=>c.id===r.targetId)?.title||"Item cadastrado")}</strong><p>${E(r.status)} · ${r.createdAt?.toDate?.().toLocaleString("pt-BR")||"Recentemente"}</p>${adminMode?`<small>ID da conta: ${E(r.ownerUid)}</small>`:""}</div>${adminMode?`<select data-request-id="${E(r.id)}" aria-label="Atualizar andamento"><option value="pending" ${r.status==="pending"?"selected":""}>Pendente</option><option value="confirmed" ${r.status==="confirmed"?"selected":""}>Confirmado</option><option value="completed" ${r.status==="completed"?"selected":""}>Concluído</option><option value="canceled" ${r.status==="canceled"?"selected":""}>Cancelado</option></select>`:r.status==="pending"?`<button class="btn btn-outline" type="button" data-portal-cancel="${E(r.id)}">Cancelar</button>`:""}</article>`).join("")}</div>`:"<p>Nenhuma solicitação registrada.</p>")}
+  ${adminMode?`<section class="portal-overview-grid">
+    ${Object.entries(countRequestStatuses(requests)).map(([key,value])=>`<div class="panel"><span class="section-kicker">${statusLabel(key)}</span><strong>${value}</strong></div>`).join("")}
+    </section>`:""}
+  ${block(adminMode?"Solicitações recebidas":"Minhas solicitações",(adminMode?requests:mine).length?`<div class="portal-request-list">${(adminMode?requests:mine).map(r=>`<article class="portal-request"><div><strong>${E(choices.find(c=>c.id===r.targetId)?.title||"Item cadastrado")}</strong><p>${statusLabel(r.status)} · ${r.createdAt?.toDate?.().toLocaleString("pt-BR")||"Recentemente"}</p>${adminMode?`<small>ID da conta: ${E(r.ownerUid)}</small>`:""}</div>${adminMode?`<select data-request-id="${E(r.id)}" aria-label="Atualizar andamento"><option value="pending" ${r.status==="pending"?"selected":""}>Pendente</option><option value="confirmed" ${r.status==="confirmed"?"selected":""}>Confirmado</option><option value="completed" ${r.status==="completed"?"selected":""}>Concluído</option><option value="canceled" ${r.status==="canceled"?"selected":""}>Cancelado</option></select>`:r.status==="pending"?`<button class="btn btn-outline" type="button" data-portal-cancel="${E(r.id)}">Cancelar</button>`:""}</article>`).join("")}</div>`:"<p>Nenhuma solicitação registrada.</p>")}
   ${contents()}`;
  };
  const dashboard=()=>{
@@ -62,7 +80,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    <div class="portal-shell"><aside class="panel portal-nav"><h3>Módulos</h3>${sections()}</aside><div class="portal-content">
     ${m?`<div class="portal-heading"><div>${card(m)}<div><span class="section-kicker">${E(m.group)}</span><h2>${E(m.name)}</h2><p>${E(m.description)}</p></div></div>${adminMode?`<button class="btn btn-outline" type="button" data-portal-action="toggle-module">${enabled(m)?"Desativar módulo":"Ativar módulo"}</button>`:""}</div>
       ${statusMessage?`<div class="notice"><span class="notice-icon">ⓘ</span><div>${E(statusMessage)}</div></div>`:""}
-      ${m.special==="upa"?upaView():m.special==="guidance"?safeGuidance():m.special==="appointments"?requestsView("appointment"):m.special==="enrollments"?requestsView("course"):contents()}
+      ${m.special==="upa"?upaView():m.id==="esf"?esfView():m.special==="guidance"?safeGuidance():m.special==="appointments"?requestsView("appointment"):m.special==="enrollments"?requestsView("course"):contents()}
       ${adminMode&&m.special!=="upa"&&m.special!=="guidance"?`<div class="module-toolbar"><button class="btn btn-solid" type="button" data-portal-action="create">+ ${m.special==="enrollments"?"Cadastrar curso":m.special==="appointments"?"Cadastrar opção de atendimento":"Cadastrar informação"}</button></div>`:""}
       ${adminMode&&editing!==null&&m.special!=="upa"&&m.special!=="guidance"?editForm():""}
       ${adminMode&&m.special==="guidance"?`<div class="module-toolbar"><button class="btn btn-solid" data-portal-action="create" type="button">+ Cadastrar orientação revisada</button></div>${editing!==null?editForm():""}`:""}
@@ -79,6 +97,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
  };
  const renderDashboard=()=>{if(isAlive())root.innerHTML=dashboard();};
  const loadAccess=async()=>{
+  stopLive();
   const gen=++latest;loading=true;error="";render();
   try{
    let canSeeAll=false;
@@ -101,6 +120,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   }catch(e){error=errorText(e);loading=false;render();}
  };
  const loadSettings=async()=>{
+  stopLive();
   const gen=++latest;loading=true;statusMessage="";render();
   try{
    const snap=await getDocs(adminMode?collection(db,"municipalities",cityId,"moduleSettings"):query(collection(db,"municipalities",cityId,"moduleSettings"),where("enabled","==",true)));
@@ -110,7 +130,30 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    await loadSection();
   }catch(e){error=errorText(e);loading=false;render();}
  };
+ const subscribeLive=()=>{
+  stopLive();
+  if(!section || !cityId)return;
+  const observedCity=cityId,observedSection=section;
+  const onCurrent=()=>isAlive()&&observedCity===cityId&&observedSection===section;
+  const itemQuery=adminMode?modulePath(cityId,section):query(modulePath(cityId,section),where("published","==",true));
+  unsubscribeItems=onSnapshot(itemQuery,snapshot=>{
+   if(!onCurrent())return;
+   entries=snapshot.docs.map(x=>({id:x.id,moduleKey:observedSection,...x.data()}))
+    .sort((a,b)=>(a.title||"").localeCompare(b.title||"","pt-BR"));
+   if(!loading&&editing===null)render();
+  },e=>{if(onCurrent())console.warn("Sincronização de itens:",e?.code||e);});
+  if(section==="upa"){
+   unsubscribeUpa=onSnapshot(doc(db,"municipalities",cityId,"moduleStatus","upa"),snapshot=>{
+    if(!onCurrent())return;
+    status=snapshot.exists()&&(adminMode||snapshot.data().published)?snapshot.data():null;
+    // Não sobrescreve dados que o profissional esteja digitando no formulário.
+    const form=root.querySelector("#portalUpaForm");
+    if(!loading&&(!form||!form.contains(document.activeElement)))render();
+   },e=>{if(onCurrent())console.warn("Sincronização da UPA:",e?.code||e);});
+  }
+ };
  const loadSection=async()=>{
+  stopLive();
   const gen=++latest;loading=true;editing=null;render();
   if(!section){entries=[];status=null;requests=[];loading=false;render();return;}
   try{
@@ -130,7 +173,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
     requests=results?.docs.map(d=>({id:d.id,...d.data()}))||[];
    }else requests=[];
    if(!isAlive()||gen!==latest)return;
-   loading=false;render();
+   loading=false;render();subscribeLive();
   }catch(e){error=errorText(e);loading=false;render();}
  };
  const execute=async(fn)=>{
@@ -169,8 +212,25 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   }
  };
  const click=event=>{
+  const queueButton=event.target.closest("[data-queue-step]");
+  if(queueButton&&adminMode&&section==="upa"){
+   if(!status){informSafe("Cadastre e salve a situação da UPA antes de ajustar a fila.");return;}
+   const step=Number(queueButton.dataset.queueStep);
+   if(nextQueueValue(normalizeOperationalInfo(status).queue,step)===null){informSafe("Contagem fora do intervalo permitido.");return;}
+   queueButton.disabled=true;
+   const cityAtClick=cityId;
+   void execute(async()=>await runTransaction(db,async tx=>{
+    const ref=doc(db,"municipalities",cityAtClick,"moduleStatus","upa");
+    const snap=await tx.get(ref);
+    if(!snap.exists())throw Error("Cadastre os dados da UPA antes de atualizar a fila.");
+    const next=nextQueueValue(normalizeOperationalInfo(snap.data()).queue,step);
+    if(next===null)throw Error("Fila fora do intervalo permitido. Atualize e tente novamente.");
+    tx.update(ref,{queue:next,updatedAt:serverTimestamp()});
+   }));
+   return;
+  }
   const module=event.target.closest("[data-portal-module]");
-  if(module){section=module.dataset.portalModule;statusMessage="";void loadSection();return;}
+  if(module){section=module.dataset.portalModule;esfQuery="";statusMessage="";void loadSection();return;}
   const item=event.target.closest("[data-portal-edit]");
   if(item){editing=item.dataset.portalEdit;render();root.querySelector("#portalEdit")?.scrollIntoView({behavior:"smooth",block:"nearest"});return;}
   const publish=event.target.closest("[data-portal-publish]");
@@ -192,8 +252,15 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    }catch(e){informSafe(errorText(e));render();}})();
   }
  };
+ const input=event=>{
+  if(event.target.id!=="esfSearch")return;
+  esfQuery=event.target.value;
+  const term=esfQuery.trim().toLocaleLowerCase("pt-BR");
+  const hits=currentEntries().filter(x=>[x.title,x.address,x.hours,x.details,x.description].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term)));
+  const container=root.querySelector("#esfResults");if(container)container.innerHTML=contents(hits);
+ };
  const change=event=>{
-  if(event.target.id==="portal_city"){cityId=event.target.value;try{localStorage.setItem(cityKey,cityId)}catch{}section="";void loadSettings();}
+  if(event.target.id==="portal_city"){stopLive();cityId=event.target.value;try{localStorage.setItem(cityKey,cityId)}catch{}section="";esfQuery="";void loadSettings();}
   const select=event.target.closest("[data-request-id]");
   if(select&&adminMode){
    const id=select.dataset.requestId,col=section==="agendamentos"?"appointmentRequests":"courseRegistrations";
@@ -205,6 +272,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
  root.addEventListener("click",click,{signal});
  root.addEventListener("submit",submit,{signal});
  root.addEventListener("change",change,{signal});
+ root.addEventListener("input",input,{signal});
  const unsub=onAuthStateChanged(auth,async value=>{
   if(!isAlive())return;
   const oldId=user?.uid||null;
@@ -212,6 +280,6 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   if(adminMode&&oldId!==user?.uid){void loadAccess();return;}
   if(!adminMode&&cities.length&&(section==="agendamentos"||section==="cetec"))void loadSection();
  });
- signal?.addEventListener("abort",()=>{++latest;unsub();},{once:true});
+ signal?.addEventListener("abort",()=>{++latest;stopLive();unsub();},{once:true});
  void loadAccess();
 }

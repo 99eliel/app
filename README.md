@@ -153,3 +153,18 @@ ser considerada homologada para dados reais de pacientes.
 
 Leia o [plano de migração](CONECTEBR_MIGRATION.md) para consultar a
 relação exata de funcionalidades aproveitadas e ainda pendentes.
+
+
+## Operação municipal — UPA, ESF e relatórios
+
+A próxima etapa do ConecteBR já foi adaptada ao ConectaSaúde:
+
+- **UPA 24h**: situação inicial em branco, cadastro da fila, escalas semanais e plantões. A equipe pode registrar **+ Entrada** e **− Saída**, com atualização transacional do Firestore. A informação é agregada, não contém identificação de pacientes e não representa tempo estimado de espera.
+- **ESF**: cada unidade é cadastrada manualmente pelo administrador. Nome, endereço, horário, telefone e equipe podem ser preenchidos e publicados. Inclui busca por nome, endereço e equipe.
+- **Atualização ao vivo**: cadastros municipais e situação da UPA passam a ser acompanhados por listeners do Firestore enquanto o módulo estiver aberto.
+- **Solicitações/inscrições**: o painel administrativo mostra totais por situação (pendente, confirmado, concluído, cancelado).
+- **Relatórios**: `/#gestao` mostra indicadores agregados do município autorizado (módulos ativos, ESF cadastradas/publicadas, campanhas publicadas, solicitações e inscrições pendentes, fila informada) e permite exportação CSV.
+
+Não há números ou cadastros fictícios. O aplicativo exibe ausência de dados até você cadastrar.
+
+**Atenção às regras:** a versão de `firestore.rules` atualmente salva no repositório passou por uma migração incompleta e **não deve ser implantada sem correção e validação**. As regras devem ser conferidas com a versão que você publicou manualmente no console; GitHub Pages não altera as regras existentes. Antes de usar em operação, faça testes completos no Firebase Emulator Suite, incluindo duas cidades e perfis distintos.

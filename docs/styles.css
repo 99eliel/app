@@ -140,3 +140,37 @@ body.dark .auth-error h3,body.dark .auth-error p,body.dark .auth-error a{color:#
 .portal-content .input-field textarea{background:var(--bg)}
 @media(max-width:1150px){.portal-shell{grid-template-columns:1fr}.portal-nav{position:static;max-height:none}.portal-module-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:740px){.portal-choose{align-items:flex-start;flex-direction:column}.portal-choose select{width:100%;min-width:0}.portal-upa-grid,.portal-week{grid-template-columns:1fr}.portal-content>.data-grid,.portal-module-list{grid-template-columns:1fr}.portal-heading{align-items:flex-start;flex-wrap:wrap}.portal-heading>.btn{width:100%}.portal-request{align-items:flex-start;flex-direction:column}}
+
+/* UPA e ESF: operação municipal */
+.portal-queue-actions{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 9px}
+.portal-queue-actions .btn{padding:11px 16px;min-width:112px}
+.portal-queue-actions .btn:disabled{opacity:.4;cursor:not-allowed}
+.portal-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.portal-overview-grid .panel{display:flex;flex-direction:column;gap:9px;padding:18px}
+.portal-overview-grid .panel strong{font:800 29px "Plus Jakarta Sans",sans-serif;letter-spacing:-.04em}
+.portal-overview-grid .section-kicker{line-height:1.5}
+.portal-directory-toolbar{display:flex;flex-direction:column;gap:8px}
+.portal-directory-toolbar label{font-size:11px;font-weight:800;color:var(--muted)}
+.portal-directory-toolbar input{min-height:45px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:12px 15px}
+.portal-directory-toolbar input:focus{outline:2px solid #3fb89c;outline-offset:1px}
+#esfResults>.data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:720px){.portal-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#esfResults>.data-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.portal-queue-actions .btn{flex:1}.portal-overview-grid{grid-template-columns:1fr 1fr}.portal-overview-grid .panel{padding:13px}.portal-overview-grid .panel strong{font-size:23px}}
+
+/* Indicadores operacionais por município — sem números fictícios */
+.report-toolbar{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:18px 0}
+.report-toolbar .input-field{min-width:min(100%,320px);flex:1;max-width:500px}
+.report-toolbar .input-field select{min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--text)}
+.report-actions{display:flex;flex-wrap:wrap;gap:9px}
+.report-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.report-stat{min-height:162px;display:flex;flex-direction:column;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.report-stat-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:11px;background:var(--mint);color:#00775a;font-size:19px}
+.report-stat-name{font-size:11px;color:var(--muted);font-weight:700}
+.report-stat strong{font-size:30px;letter-spacing:-.05em}
+.report-stat small{font-size:10px;color:var(--muted)}
+.report-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.report-summary-grid .panel h2{font-size:32px;margin:10px 0}
+.report-summary-grid .panel p{color:var(--muted);font-size:12px;line-height:1.7}
+body.dark .report-stat-icon{background:#215045;color:#abecce}
+@media(max-width:850px){.report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-summary-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.report-grid{grid-template-columns:1fr 1fr;gap:9px}.report-stat{padding:13px;min-height:150px}.report-stat strong{font-size:25px}.report-actions{width:100%}.report-actions .btn{flex:1}}

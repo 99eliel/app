@@ -70,7 +70,7 @@ ${notice()}
 <div class="stat-card"><span class="stat-icon stat-icon--mint">▦</span><h3>Serviços</h3><p>Explore orientações de atendimento.</p></div>
 <div class="stat-card"><span class="stat-icon stat-icon--blue">♧</span><h3>Prevenção</h3><p>Informação para o cuidado diário.</p></div>
 <div class="stat-card"><span class="stat-icon stat-icon--peach">♡</span><h3>Meu espaço</h3><p>Salve seus serviços de interesse.</p></div>
-<div class="stat-card"><span class="stat-icon stat-icon--violet">▤</span><h3>Gestão</h3><p>Veja o conceito de painel profissional.</p></div>
+<div class="stat-card"><span class="stat-icon stat-icon--violet">▤</span><h3>Gestão</h3><p>Consulte indicadores do município autorizado.</p></div>
 </section>
 <div class="section-head"><div><span class="section-kicker">DESCUBRA</span><h2>Como podemos ajudar?</h2><p>Informações práticas para seu dia a dia.</p></div><a href="#servicos" class="text-link">Ver todos os serviços ↗</a></div>
 <section class="service-grid" aria-label="Serviços em destaque">${services.slice(0,6).map(card).join("")}</section>
@@ -129,7 +129,7 @@ function about(){
  <div class="panel"><h3>Privacidade por princípio</h3><p>Não coletamos informações clínicas. Favoritos, checklist e preferências ficam somente no navegador. O Analytics é opcional e requer sua autorização.</p><div class="button-row"><button type="button" class="btn btn-outline" data-action="consent-settings">Preferências do Analytics</button><button type="button" class="btn btn-outline" data-action="clear-local">Apagar dados locais</button></div></div></section>
  ${notice("Esta iniciativa é independente e não representa um canal oficial de atendimento de prefeitura. O uso de dados reais exige autorizações e cuidados legais específicos.")}`;
 }
-const views={"inicio":home,"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"gestao-modulos":()=>'<div class="loading">Carregando gestão dos módulos...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":management,"sobre":about};
+const views={"inicio":home,"servicos":catalog,"rede":()=>'<div class="loading">Carregando rede municipal...</div>',"gestao-modulos":()=>'<div class="loading">Carregando gestão dos módulos...</div>',"administracao":()=>'<div class="loading">Carregando acesso administrativo...</div>',"assinaturas":()=>'<div class="loading">Preparando área comercial...</div>',"modulos":modules.overview,"unidades":modules.units,"avisos":modules.notices,"calendario":modules.calendar,"meu-espaco":mySpace,"orientacoes":guidance,"gestao":()=>'<div class="loading">Carregando indicadores municipais...</div>',"sobre":about};
 let renderVersion=0;
 let routeController;
 function render(){
@@ -163,11 +163,16 @@ function render(){
    if(valid())mountBilling(container,toast,currentController.signal);
   }).catch(error=>showModuleError(error,currentController.signal));
  }
+ if(current==="gestao"){
+  void import("./municipal-reports.js").then(({mountReports})=>{
+   if(valid())mountReports(container,toast,currentController.signal);
+  }).catch(error=>showModuleError(error,currentController.signal));
+ }
 }
 function showModuleError(error,signal){
  if(signal?.aborted)return;
  console.error("Falha ao carregar módulo:",error);
- if(["rede","gestao-modulos","administracao","assinaturas"].includes(route())){
+ if(["rede","gestao-modulos","administracao","assinaturas","gestao"].includes(route())){
   $("#view").innerHTML='<div class="disclaimer"><strong>Não foi possível carregar esta área.</strong> Verifique a conexão, as configurações do Firebase e atualize a página.</div>';
  }
 }
