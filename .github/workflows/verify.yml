@@ -23,7 +23,10 @@ jobs:
             node --input-type=module --check < "$f"
           done
       - name: Testar lógica pura de assinaturas
-        run: node --experimental-default-type=module --test tests/*.test.mjs
+        run: |
+          set -euo pipefail
+          mapfile -t tests < <(find tests -maxdepth 1 -name '*.test.mjs' ! -name 'firestore-emulator.test.mjs' | sort)
+          node --experimental-default-type=module --test "${tests[@]}"
       - name: Confirmar arquivos do GitHub Pages
         shell: bash
         run: |
