@@ -214,3 +214,74 @@ body.dark .report-stat-icon{background:#215045;color:#abecce}
 .member-actions .btn{font-size:11px;white-space:nowrap}
 @media(max-width:900px){.sector-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.sector-grid{grid-template-columns:1fr}.member-actions .btn{width:100%}}
+
+/* Android / PWA v2.1.0 — navegação acessível, status de conexão e instalação */
+[hidden]{display:none!important}
+body{overflow-x:hidden}
+button,select,input,textarea{max-width:100%}
+input,textarea,select{font-size:max(16px,1rem)}
+.connection-state{padding:10px 20px;background:#65380e;color:#fff;font-weight:700;font-size:12px;text-align:center}
+.pwa-message{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;justify-content:space-between;gap:12px;width:min(680px,calc(100vw - 28px));background:#102f38;color:#fff;border:1px solid #365c63;border-radius:16px;box-shadow:0 12px 35px #001f2680;padding:13px 16px;font-size:12px;line-height:1.5}
+.pwa-message .btn{white-space:nowrap;flex-shrink:0;font-size:11px}
+.mobile-more{border:0;background:transparent;color:var(--muted);display:none;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-weight:700;font-size:10px}
+.mobile-more span{font-size:23px;line-height:1}
+.mobile-more:focus-visible{outline:3px solid #70d6b7;outline-offset:-2px}
+.mobile-menu{display:none;border:0;border-radius:22px 22px 0 0;max-height:min(88dvh,860px);width:100%;max-width:100%;margin:auto 0 0;padding:20px 18px max(22px,env(safe-area-inset-bottom));color:var(--text);background:var(--surface);box-shadow:0 -22px 70px #0019205c;overflow:auto;overscroll-behavior:contain}
+.mobile-menu[open]{display:block}
+.mobile-menu::backdrop{background:rgba(0,20,28,.68)}
+.mobile-menu-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}
+.mobile-menu-head h2{margin:5px 0 0;font-size:24px}
+.mobile-menu-head small{font-size:10px;letter-spacing:1px;font-weight:800;color:var(--brand)}
+.mobile-menu .nav-label{font-size:10px;font-weight:800;margin:17px 0 10px;color:var(--muted)}
+.mobile-menu-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.mobile-menu-links a,.mobile-menu-links button{display:flex;align-items:center;justify-content:flex-start;text-align:left;min-height:49px;border-radius:11px;border:1px solid var(--line);background:var(--surface-alt);color:var(--text);padding:11px;font-size:12px;font-weight:700;line-height:1.4}
+.mobile-menu-links a:active,.mobile-menu-links button:active{background:var(--mint)}
+.mobile-menu-version{margin:18px 0 0;text-align:center;font-size:11px;color:var(--muted)}
+.android-test-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;border-radius:20px;background:linear-gradient(120deg,#082f3b,#116b61);color:#fff;padding:24px;margin:18px 0}
+.android-test-hero .section-kicker{color:#b4e9d5}
+.android-test-hero h2{font-size:24px;margin:9px 0}
+.android-test-hero p{font-size:12px;color:#d4efe6;line-height:1.7;max-width:440px}
+.android-test-hero img{border-radius:22px;width:108px;height:108px;flex-shrink:0}
+.android-test-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}
+.android-test-hero .btn-outline{background:transparent;color:#fff;border:1px solid #c3e7dd}
+.android-test-h2{font-size:17px;margin:0 0 15px}
+.android-test-rows{display:grid;gap:8px}
+.android-test-row{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
+.android-test-row>div{flex:1;min-width:0}
+.android-test-row strong,.android-test-row small{display:block}
+.android-test-row strong{font-size:12px}
+.android-test-row small{font-size:10px;line-height:1.55;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.android-test-emoji{width:35px;height:35px;flex-shrink:0;display:grid;place-items:center;border-radius:11px;background:var(--surface-alt);font-size:17px}
+.android-test-result{flex-shrink:0;max-width:130px;text-align:right;font-size:11px;font-weight:800;color:var(--muted)}
+.android-test-result.good{color:#148069}
+.android-test-result.warn{color:#b77310}
+.android-test-result.bad{color:#d34e4e}
+.android-test-steps{display:grid;gap:9px}
+.android-test-steps a{display:flex;align-items:center;gap:9px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--surface-alt)}
+.android-test-steps a>strong{font-size:12px;min-width:135px}
+.android-test-steps a>small{font-size:11px;color:var(--muted);line-height:1.55;flex:1}
+.android-test-steps a>span{font-size:22px;color:var(--brand)}
+@media(max-width:900px){
+ .mobile-more{display:flex;width:20%;min-width:0}
+ .bottom-nav a{width:20%;min-width:0;padding:6px 2px;font-size:9.5px}
+ .bottom-nav{gap:0;justify-content:space-between}
+ .page-content{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+ .footer{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+ .pwa-message{bottom:calc(81px + env(safe-area-inset-bottom))}
+}
+@media(max-width:520px){
+ .mobile-menu-links{grid-template-columns:1fr 1fr}
+ .mobile-menu-links a,.mobile-menu-links button{font-size:11px;padding:10px}
+ .android-test-hero{padding:19px 16px}
+ .android-test-hero img{width:74px;height:74px;border-radius:16px;align-self:flex-start}
+ .android-test-hero h2{font-size:20px}
+ .android-test-actions .btn{flex:1;min-height:44px;font-size:11px}
+ .android-test-row{align-items:flex-start}
+ .android-test-result{max-width:95px;font-size:10px}
+ .android-test-steps a{align-items:flex-start}
+ .android-test-steps a>strong{min-width:92px}
+ .pwa-message{flex-direction:column;align-items:stretch;text-align:center}
+}
+@media(prefers-reduced-motion:reduce){
+ .mobile-menu,.pwa-message{scroll-behavior:auto;animation:none}
+}

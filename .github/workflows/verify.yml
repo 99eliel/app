@@ -46,6 +46,14 @@ jobs:
           test -s docs/notice-utils.js
           test -s docs/sw.js
           test -s sw.js
+          test -s docs/mobile-core.js
+          test -s docs/pwa-controller.js
+          test -s docs/android-test.js
+          test -s docs/version.json
+          test -s docs/icon-192.png
+          test -s docs/icon-512.png
+          test -s docs/manifest.webmanifest
+          test -s PLAY_STORE.md
 
   firestore-security:
     runs-on: ubuntu-latest

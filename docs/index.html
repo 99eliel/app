@@ -6,8 +6,15 @@
   <meta name="theme-color" content="#0b2431">
   <meta name="description" content="ConectaSaúde: serviços, informações e cuidado mais perto de você. Plataforma independente em demonstração.">
   <meta name="color-scheme" content="light dark">
+  <meta name="application-name" content="ConectaSaúde">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ConectaSaúde">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>ConectaSaúde | Saúde mais próxima</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,6 +42,7 @@
         <a href="#meu-espaco" data-nav="meu-espaco"><span aria-hidden="true">♡</span> Meu espaço</a>
         <a href="#conta" data-nav="conta"><span aria-hidden="true">👤</span> Minha conta</a>
         <a href="#orientacoes" data-nav="orientacoes"><span aria-hidden="true">✳</span> Orientações</a>
+        <a href="#teste-android" data-nav="teste-android"><span aria-hidden="true">📱</span> Teste Android</a>
       </nav>
       <p class="nav-label nav-label--second">EXPLORAR A PLATAFORMA</p>
       <nav class="sidebar-nav" aria-label="Ferramentas de demonstração">
@@ -48,7 +56,7 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="help-card"><span class="help-illustration" aria-hidden="true">✧</span><strong>Mais perto de quem precisa.</strong><p>Um novo jeito de conectar pessoas e serviços de saúde.</p><a href="#sobre">Conheça o projeto <span aria-hidden="true">↗</span></a></div>
-        <div class="sidebar-foot"><span class="status-dot"></span> Protótipo v0.1 · Conteúdo demonstrativo</div>
+        <div class="sidebar-foot"><span class="status-dot"></span> ConectaSaúde · <span data-version-label>v2.1.0</span> · Em testes</div>
       </div>
     </aside>
     <div class="workspace-main">
@@ -65,18 +73,41 @@
           <div class="profile-chip" aria-label="Ambiente de demonstração"><span class="avatar">CS</span><span><strong>Bem-vindo(a)</strong><small>Visitante</small></span></div>
         </div>
       </header>
+      <div id="connectionState" class="connection-state" role="status" hidden></div>
+      <div id="pwaMessage" class="pwa-message" role="status" hidden></div>
       <main id="view" class="page-content" tabindex="-1" aria-live="polite">
         <div class="loading"><span class="loading-dot"></span> Preparando sua experiência...</div>
       </main>
       <footer class="footer"><span>© <span id="year"></span> ConectaSaúde · Produto independente</span><span>Versão demonstrativa. Não substitui os canais oficiais de saúde.</span></footer>
     </div>
     <nav class="bottom-nav" aria-label="Navegação para celular">
-      <a href="#inicio" data-nav="inicio"><span>⌂</span> Início</a>
-      <a href="#rede" data-nav="rede"><span>⌖</span> Minha cidade</a>
-      <a href="#meu-espaco" data-nav="meu-espaco"><span>♡</span> Meu espaço</a>
-      <a href="#modulos" data-nav="modulos"><span>▧</span> Módulos</a>
+      <a href="#inicio" data-nav="inicio"><span aria-hidden="true">⌂</span> Início</a>
+      <a href="#rede" data-nav="rede"><span aria-hidden="true">⌖</span> Minha cidade</a>
+      <a href="#conta" data-nav="conta"><span aria-hidden="true">👤</span> Minha conta</a>
+      <a href="#gestao-modulos" data-nav="gestao-modulos"><span aria-hidden="true">⚙</span> Gestão</a>
+      <button type="button" class="mobile-more" id="mobileMenuButton" aria-haspopup="dialog" aria-controls="mobileMenu" aria-expanded="false"><span aria-hidden="true">☷</span> Mais</button>
     </nav>
   </div>
+  <dialog id="mobileMenu" class="mobile-menu" aria-label="Todas as áreas do aplicativo">
+    <div class="mobile-menu-head"><div><small>CON ECTA SAÚDE</small><h2>Mais opções</h2></div><button type="button" id="mobileMenuClose" class="icon-button" aria-label="Fechar menu">×</button></div>
+    <p class="nav-label">PARA VOCÊ</p>
+    <div class="mobile-menu-links">
+      <a href="#inicio">⌂ Início</a><a href="#rede">⌖ Minha cidade</a><a href="#servicos">✳ Serviços de saúde</a>
+      <a href="#conta">👤 Minha conta</a><a href="#meu-espaco">♡ Meu espaço</a><a href="#orientacoes">✚ Orientações</a>
+    </div>
+    <p class="nav-label">ADMINISTRAÇÃO</p>
+    <div class="mobile-menu-links">
+      <a href="#gestao-modulos">⚙ Gerenciar módulos</a><a href="#administracao">👥 Administração e acessos</a>
+      <a href="#gestao">▤ Relatórios municipais</a><a href="#assinaturas">◈ Licenças</a>
+      <a href="#modulos">▧ Todos os módulos</a>
+    </div>
+    <p class="nav-label">APP NO CELULAR</p>
+    <div class="mobile-menu-links">
+      <a href="#teste-android">📱 Diagnóstico do Android</a><button type="button" data-pwa-action="install">⬇ Instalar aplicativo</button>
+      <button type="button" data-pwa-action="check">↻ Procurar atualização</button>
+      <a href="#sobre">ⓘ Sobre o ConectaSaúde</a>
+    </div><p class="mobile-menu-version" data-version-label>Versão 2.1.0</p>
+  </dialog>
   <dialog id="serviceDialog" class="service-dialog" aria-labelledby="dialogTitle">
     <div id="dialogContent"></div>
   </dialog>

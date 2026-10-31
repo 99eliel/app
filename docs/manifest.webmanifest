@@ -1,18 +1,55 @@
 {
-  "name": "ConectaSaúde — Serviços e Orientações",
+  "name": "ConectaSaúde — Portal Municipal",
   "short_name": "ConectaSaúde",
   "start_url": "../#inicio",
   "scope": "../",
   "display": "standalone",
   "theme_color": "#0b2431",
   "background_color": "#f4f8f8",
-  "description": "Serviços municipais configuráveis, informações de saúde e acompanhamento de solicitações.",
+  "description": "Portal de serviços municipais, unidades de saúde, avisos e atendimento à população.",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "../",
+  "display_override": [
+    "standalone"
+  ],
+  "orientation": "any",
+  "shortcuts": [
+    {
+      "name": "Minha cidade",
+      "short_name": "Cidade",
+      "url": "../#rede",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Minha conta",
+      "short_name": "Conta",
+      "url": "../#conta",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

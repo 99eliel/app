@@ -210,3 +210,19 @@ O administrador municipal usa `role:"admin"` e `moduleIds:[]`.
 O painel **Gerenciar módulos** só mostra os setores autorizados para editores; somente o administrador municipal e o Superadmin podem habilitar ou desabilitar módulos. Relatórios consolidados (`/#gestao`) permanecem restritos aos administradores.
 
 **Regras em produção:** publique `firestore.rules` novamente no Firebase após aprovar a atualização; o GitHub Pages não altera as permissões do banco. O CI compila e testa o isolamento entre municípios e setores no Firebase Emulator Suite. Não se trata de sistema de prontuário.
+
+## Android e Google Play — PWA v2.1.0
+
+O ConectaSaúde está sendo preparado para testes diretos no Android, antes da publicação na loja:
+
+- **Instalação**: use o Chrome Android e o menu ⋮ → `Instalar app`; o manifesto declara ícones PNG 192×192 e 512×512.
+- **Navegação no celular**: barra inferior com Início, Minha cidade, Minha conta, Gestão e **Mais**, onde também estão Administração, Relatórios, Licenças e Diagnóstico Android.
+- **Diagnóstico**: abra `/#teste-android` para conferir versão, conexão, modo instalado, Service Worker, login e teste de leitura do Firebase.
+- **Atualizações**: arquivo público `docs/version.json` e módulo `docs/pwa-controller.js`; o usuário escolhe atualizar após salvar seus formulários. O Service Worker armazena apenas arquivos estáticos de interface da mesma origem (não dados do Firestore).
+- **Rede offline**: funciona apenas a interface já armazenada no cache, sem prometer leitura offline de cadastros e sem salvar solicitações localmente.
+
+A versão Android nativa da loja ainda **não foi gerada**. A estratégia proposta é **Trusted Web Activity (TWA)** com domínio próprio verificado por Digital Asset Links, em vez de um WebView genérico que poderia comprometer o login do Google. O pacote Android `.aab`, a identidade definitiva do pacote, a assinatura, os contatos reais de privacidade e a conta Google Play aprovada ainda são etapas pendentes.
+
+Consulte [o plano detalhado para Play Store](PLAY_STORE.md) para requisitos, certificados, Android API 36, testes fechados e privacidade.
+
+**Atenção:** as configurações de segurança no Firebase continuam independentes do GitHub Pages. Esta entrega Android não muda `firestore.rules`.
