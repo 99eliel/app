@@ -17,8 +17,29 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.enabled == true
         && get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data.role in ['admin','editor'];
     }
+    function memberData(cityId) {
+      return get(/databases/$(database)/documents/municipalities/$(cityId)/members/$(request.auth.uid)).data;
+    }
+    // Administradores municipais têm visão geral; editores só o setor concedido.
+    // Membros antigos sem moduleIds não recebem privilégios novos implicitamente.
+    function cityAdmin(cityId) {
+      return platformAdmin() || (isMember(cityId) && memberData(cityId).role == 'admin');
+    }
+    function sectorMember(cityId,moduleId) {
+      return isMember(cityId)
+        && (memberData(cityId).role == 'admin'
+          || (memberData(cityId).role == 'editor'
+            && memberData(cityId).get('moduleIds',[]) is list
+            && moduleId in memberData(cityId).get('moduleIds',[])));
+    }
+    function canViewModule(cityId,moduleId) {
+      return platformAdmin() || sectorMember(cityId,moduleId);
+    }
+    function canEditModule(cityId,moduleId) {
+      return platformAdmin() || (sectorMember(cityId,moduleId) && currentLicense(cityId));
+    }
     function canView(cityId) {
-      return platformAdmin() || isMember(cityId);
+      return cityAdmin(cityId);
     }
     // A suspensão comercial não apaga registros nem retira acesso de leitura
     // da equipe autorizada. Apenas gravações municipais são interrompidas.
@@ -29,7 +50,7 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/licenses/$(cityId)).data.validUntil > request.time;
     }
     function canEdit(cityId) {
-      return platformAdmin() || (isMember(cityId) && currentLicense(cityId));
+      return platformAdmin() || (cityAdmin(cityId) && currentLicense(cityId));
     }
     function cityActive(cityId) {
       return get(/databases/$(database)/documents/municipalities/$(cityId)).data.active == true;
@@ -126,6 +147,18 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(id))
         && get(/databases/$(database)/documents/municipalities/$(cityId)/moduleSettings/$(id)).data.enabled == true;
     }
+    function validMember(d) {
+      return d.keys().hasAll(['role','enabled','moduleIds','updatedAt'])
+        && d.keys().hasOnly(['role','enabled','moduleIds','updatedAt'])
+        && d.role in ['admin','editor']
+        && d.enabled is bool
+        && d.updatedAt is timestamp
+        && d.moduleIds is list
+        && d.moduleIds.size() <= 15
+        && d.moduleIds.hasOnly(['upa','esf','agendamentos','triagem','laboratorio',
+          'farmacia','escalas','campanhas','cetec','servicos','engenharia',
+          'meioambiente','educacao','esportes','infraestrutura']);
+    }
     function validSetting(d) {
       return d.keys().hasAll(['enabled','updatedAt'])
         && d.keys().hasOnly(['enabled','updatedAt'])
@@ -206,80 +239,76 @@ service cloud.firestore {
       match /members/{userId} {
         allow get: if platformAdmin() || (loggedIn() && request.auth.uid == userId);
         allow list: if platformAdmin();
-        allow create, update: if platformAdmin()
-          && request.resource.data.keys().hasOnly(['role','enabled','updatedAt'])
-          && request.resource.data.keys().hasAll(['role','enabled','updatedAt'])
-          && request.resource.data.role in ['admin','editor']
-          && request.resource.data.enabled is bool
-          && request.resource.data.updatedAt is timestamp;
+        allow create, update: if platformAdmin() && validMember(request.resource.data);
         allow delete: if platformAdmin();
       }
 
 
       match /moduleSettings/{moduleId} {
-        allow get, list: if canView(cityId)
+        // Habilitação dos módulos não inclui dados de pacientes.
+        allow get, list: if isMember(cityId) || platformAdmin()
           || (cityActive(cityId) && resource.data.enabled == true);
         allow create, update: if canEdit(cityId) && validModuleId(moduleId)
           && validSetting(request.resource.data);
         allow delete: if false;
       }
       match /moduleEntries/{moduleId}/items/{entryId} {
-        allow get, list: if canView(cityId)
+        allow get, list: if canViewModule(cityId,moduleId)
           || (cityActive(cityId) && moduleEnabled(cityId,moduleId)
              && resource.data.published == true);
-        allow create: if canEdit(cityId) && validModuleId(moduleId)
+        allow create: if canEditModule(cityId,moduleId) && validModuleId(moduleId)
           && validEntry(request.resource.data,moduleId);
-        allow update: if canEdit(cityId) && validModuleId(moduleId)
+        allow update: if canEditModule(cityId,moduleId) && validModuleId(moduleId)
           && validEntry(request.resource.data,moduleId)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }
       match /moduleStatus/{moduleId} {
-        allow get: if canView(cityId)
+        allow get: if canViewModule(cityId,moduleId)
           || (moduleId == 'upa' && cityActive(cityId)
               && moduleEnabled(cityId,'upa') && resource.data.published == true);
         allow list: if false;
-        allow create, update: if moduleId == 'upa' && canEdit(cityId)
+        allow create, update: if moduleId == 'upa' && canEditModule(cityId,'upa')
           && validUpa(request.resource.data);
         allow delete: if false;
       }
       match /appointmentRequests/{id} {
-        allow get, list: if canView(cityId)
+        allow get, list: if canViewModule(cityId,'agendamentos')
           || (loggedIn() && resource.data.ownerUid == request.auth.uid);
         allow create: if citizenCreate(cityId,'agendamentos',request.resource.data);
-        allow update: if (canEdit(cityId)
+        allow update: if (canEditModule(cityId,'agendamentos')
           && unchangedRequestFields(resource.data,request.resource.data))
           || citizenCancel(resource.data,request.resource.data);
         allow delete: if false;
       }
       match /courseRegistrations/{id} {
-        allow get, list: if canView(cityId)
+        allow get, list: if canViewModule(cityId,'cetec')
           || (loggedIn() && resource.data.ownerUid == request.auth.uid);
         allow create: if citizenCreate(cityId,'cetec',request.resource.data);
-        allow update: if (canEdit(cityId)
+        allow update: if (canEditModule(cityId,'cetec')
           && unchangedRequestFields(resource.data,request.resource.data))
           || citizenCancel(resource.data,request.resource.data);
         allow delete: if false;
       }
 
       match /units/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validUnit(request.resource.data);
-        allow update: if canEdit(cityId) && validUnit(request.resource.data)
+        allow get, list: if canViewModule(cityId,'esf') || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEditModule(cityId,'esf') && validUnit(request.resource.data);
+        allow update: if canEditModule(cityId,'esf') && validUnit(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }
       match /notices/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validNotice(request.resource.data);
-        allow update: if canEdit(cityId) && validNotice(request.resource.data)
+        allow get, list: if canViewModule(cityId,'campanhas') || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEditModule(cityId,'campanhas') && validNotice(request.resource.data);
+        allow update: if canEditModule(cityId,'campanhas') && validNotice(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }
       match /events/{recordId} {
-        allow get, list: if canView(cityId) || (cityActive(cityId) && resource.data.published == true);
-        allow create: if canEdit(cityId) && validEvent(request.resource.data);
-        allow update: if canEdit(cityId) && validEvent(request.resource.data)
+        allow get, list: if canViewModule(cityId,'campanhas') || (cityActive(cityId) && resource.data.published == true);
+        allow create: if canEditModule(cityId,'campanhas') && validEvent(request.resource.data);
+        allow update: if canEditModule(cityId,'campanhas') && validEvent(request.resource.data)
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if false;
       }

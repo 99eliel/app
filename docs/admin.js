@@ -2,6 +2,7 @@
 // Auth Google + Firestore; permissões e isolamento dependem das firestore.rules.
 import {auth,db} from "./firebase.js";
 import {explainFirebaseError} from "./auth-errors.js";
+import {ACCESS_GROUPS,normalizedGrants,canManageModules,adminTabGranted} from "./sector-access.js";
 import {GoogleAuthProvider,onAuthStateChanged,signInWithPopup,signOut} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import {addDoc,collection,doc,getDoc,getDocs,query,setDoc,updateDoc,serverTimestamp,where} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -12,7 +13,7 @@ const kinds=["Comunicado","Campanha","Serviço","Evento"];
 const provider=new GoogleAuthProvider();
 provider.setCustomParameters({prompt:"select_account"});
 
-let target=null,toast=()=>{},user=null,isPlatformAdmin=false, cities=[], cityId="",tab="units",records=[],members=[],editId=null,unsub=null,hasInitialized=false,loading=false,notice="",loadSeq=0;
+let target=null,toast=()=>{},user=null,isPlatformAdmin=false, cities=[], cityId="",tab="units",records=[],members=[],editId=null,unsub=null,hasInitialized=false,loading=false,notice="",loadSeq=0,memberMap=new Map(),memberEdit=null;
 const head=()=>`<div class="page-heading"><div><span class="section-kicker">ADMINISTRAÇÃO SEGURA</span><h1>Central de gerenciamento</h1><p>Organize informações públicas por município. Nesta etapa não são permitidos prontuários, documentos de pacientes nem informações clínicas.</p></div><span class="pill">Acesso restrito</span></div>`;
 const feedback=message=>{notice=message;toast(message)};
 const err=error=>`${error.code||"Erro"}: ${error.message||"Não foi possível concluir a operação."}`;
@@ -34,7 +35,8 @@ function addCityForm(){
  return `<details class="panel admin-accordion"><summary>+ Cadastrar município</summary><form id="newCityForm" class="module-form">${formField("Nome do município *","cityName","",85)}<div class="input-field"><label for="cityState">UF *</label><input id="cityState" name="cityState" maxlength="2" minlength="2" pattern="[A-Za-z]{2}" placeholder="GO" required></div><div class="form-actions"><button class="btn btn-solid" type="submit">Criar município inativo</button></div></form><p class="module-caption">Após o cadastro, ative o município quando as informações estiverem prontas para publicação.</p></details>`;
 }
 function tabs(){
- return `<div class="filter-bar" role="group" aria-label="Gerenciamento">${Object.entries(categories).map(([value,label])=>`<button type="button" class="filter-btn ${tab===value?"active":""}" data-admin-tab="${value}" aria-pressed="${tab===value}">${label}</button>`).join("")}${isPlatformAdmin?`<button type="button" class="filter-btn ${tab==="members"?"active":""}" data-admin-tab="members" aria-pressed="${tab==="members"}">Acessos</button>`:""}</div>`;
+ const member=memberMap.get(cityId);
+ return `<div class="filter-bar" role="group" aria-label="Gerenciamento">${Object.entries(categories).filter(([value])=>adminTabGranted({isPlatformAdmin,member,tab:value})).map(([value,label])=>`<button type="button" class="filter-btn ${tab===value?"active":""}" data-admin-tab="${value}" aria-pressed="${tab===value}">${label}</button>`).join("")}${isPlatformAdmin?`<button type="button" class="filter-btn ${tab==="members"?"active":""}" data-admin-tab="members" aria-pressed="${tab==="members"}">Acessos</button>`:""}</div>`;
 }
 function recordCard(r){
  const title=r.name||r.title||"Registro";
@@ -56,16 +58,23 @@ function dataForm(){
 }
 function memberList(){
  if(!members.length)return '<div class="empty-state"><strong>Sem usuários cadastrados</strong><p>Adicione o UID de uma conta autorizada para liberar a gestão.</p></div>';
- return `<div class="panel" style="overflow-x:auto"><h3>Acessos cadastrados</h3><table class="table-like"><thead><tr><th>UID</th><th>Função</th><th>Status</th><th>Ação</th></tr></thead><tbody>${members.map(m=>`<tr><td><code>${esc(m.id)}</code></td><td>${m.role==="admin"?"Admin municipal":"Editor"}</td><td>${m.enabled?"Ativo":"Revogado"}</td><td><button type="button" class="btn btn-outline" data-admin-member="${esc(m.id)}">${m.enabled?"Revogar":"Reativar"}</button></td></tr>`).join("")}</tbody></table></div>`;
+ return `<div class="panel" style="overflow-x:auto"><h3>Acessos cadastrados</h3><table class="table-like"><thead><tr><th>UID</th><th>Função e setores</th><th>Status</th><th>Ação</th></tr></thead><tbody>${members.map(m=>`<tr><td><code>${esc(m.id)}</code></td><td><strong>${m.role==="admin"?"Administrador municipal":"Editor por setor"}</strong><small class="module-caption">${m.role==="admin"?"Todos os setores":normalizedGrants(m.moduleIds).map(id=>ACCESS_GROUPS.find(g=>g.id===id)?.label||id).join(", ")||"Nenhum setor liberado"}</small></td><td>${m.enabled?"Ativo":"Revogado"}</td><td><div class="member-actions"><button type="button" class="btn btn-outline" data-admin-edit-member="${esc(m.id)}">Editar permissões</button><button type="button" class="btn btn-outline" data-admin-member="${esc(m.id)}">${m.enabled?"Revogar":"Reativar"}</button></div></td></tr>`).join("")}</tbody></table></div>`;
+}
+function permissionsChecklist(grants=[]){
+ const ids=new Set(normalizedGrants(grants));
+ return `<fieldset class="sector-checklist"><legend>Setores permitidos para o editor</legend><p>Selecione somente os módulos necessários. O Firebase bloqueia o acesso aos demais setores.</p><div class="sector-grid">${ACCESS_GROUPS.map(item=>`<label class="sector-check"><input type="checkbox" name="moduleIds" value="${item.id}" ${ids.has(item.id)?"checked":""}><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></label>`).join("")}</div></fieldset>`;
 }
 function accessPanel(){
- return `<div class="disclaimer">Atribua acesso somente a pessoas autorizadas. Você precisará do UID que aparece quando elas fazem login. <strong>O UID é uma identificação de conta, não de paciente.</strong></div><section class="panel"><h3>Permitir gestão deste município</h3><p>Disponível apenas para administradores da plataforma. Permissões são verificadas pelo Firestore.</p><form id="grantForm" class="module-form">${formField("UID do usuário *","memberUid","",128)}<div class="input-field"><label for="role">Nível de acesso</label><select id="role" name="role"><option value="editor">Editor</option><option value="admin">Administrador municipal</option></select></div><div class="form-actions"><button type="submit" class="btn btn-solid">Conceder acesso</button></div></form></section>${memberList()}`;
+ const edit=members.find(m=>m.id===memberEdit);
+ return `<div class="disclaimer">O Superadmin pode dar acesso a um setor específico ou a todos os setores. Use o UID da conta Google/e-mail do profissional; não cadastre dados clínicos aqui. <strong>Novos editores começam sem permissões até você selecionar os setores.</strong></div><section class="panel"><h3>${edit?"Editar acesso existente":"Autorizar colaborador"}</h3><p>As regras do Firestore conferem os setores do usuário em cada operação.</p><form id="grantForm" class="module-form">${formField("UID do usuário *","memberUid",edit?.id||"",128)}<div class="input-field"><label for="role">Nível de acesso</label><select id="role" name="role"><option value="editor" ${edit?.role!=="admin"?"selected":""}>Editor por setor</option><option value="admin" ${edit?.role==="admin"?"selected":""}>Administrador municipal (todos os módulos)</option></select></div>${permissionsChecklist(edit?.moduleIds||[])}<div class="form-actions"><button type="submit" class="btn btn-solid">${edit?"Salvar permissões":"Conceder acesso"}</button>${edit?'<button type="button" class="btn btn-outline" data-admin="cancel-member">Cancelar edição</button>':""}</div></form></section>${memberList()}`;
 }
 function dashboard(){
  const city=cities.find(c=>c.id===cityId);
+ const member=memberMap.get(cityId);
+ const visibleTabs=Object.keys(categories).filter(x=>adminTabGranted({isPlatformAdmin,member,tab:x}));
  return `${head()}${identity()}${isPlatformAdmin?addCityForm():""}${cities.length?`${chooseCity()}${isPlatformAdmin?`<div class="notice"><span class="notice-icon">ⓘ</span><div><strong>Visibilidade municipal:</strong> ${city.active?"Ativo para consultas públicas.":"Desativado para consultas públicas."} <button type="button" class="btn btn-outline" data-admin="toggle-city" style="margin-left:10px">${city.active?"Desativar município":"Ativar município"}</button></div></div>`:""}${tabs()}
  <div class="section-head"><div><h2>${tab==="members"?"Gerenciar acessos":`Gerenciar ${categories[tab]?.toLowerCase()||"conteúdo"}`}</h2><p>Os registros salvos aqui ficam disponíveis no Firestore. Somente itens publicados aparecem para visitantes.</p></div>${tab!=="members"?`<button class="btn btn-solid" type="button" data-admin="new-record">+ Novo registro</button>`:""}</div>
- ${tab==="members"?accessPanel():`${records.length?`<div class="data-grid">${records.map(recordCard).join("")}</div>`:`<div class="empty-state"><strong>Nenhum registro nesta área</strong><p>Crie um registro e decida quando torná-lo público.</p></div>`}${editId!==null?dataForm():""}`}`:`<div class="empty-state"><strong>Comece cadastrando o primeiro município.</strong><p>O cadastro estará inicialmente inativo. Depois você poderá adicionar e publicar informações públicas.</p></div>`}
+ ${tab==="members"?accessPanel():!visibleTabs.length?`<div class="empty-state"><strong>Acesso autorizado apenas aos setores selecionados</strong><p>Use Gerenciar módulos para acessar UPA, ESF, recepção e outros setores permitidos.</p><a href="#gestao-modulos" class="btn btn-solid">Abrir meus módulos</a></div>`:`${records.length?`<div class="data-grid">${records.map(recordCard).join("")}</div>`:`<div class="empty-state"><strong>Nenhum registro nesta área</strong><p>Crie um registro e decida quando torná-lo público.</p></div>`}${editId!==null?dataForm():""}`}`:`<div class="empty-state"><strong>Comece cadastrando o primeiro município.</strong><p>O cadastro estará inicialmente inativo. Depois você poderá adicionar e publicar informações públicas.</p></div>`}
  ${notice?`<div class="notice"><span class="notice-icon">ⓘ</span><div>${esc(notice)}</div></div>`:""}`;
 }
 function show(){
@@ -80,26 +89,35 @@ async function loadAccess(){
  const checkedUser=user;
  loading=true;show();
  try{
-  if(!user){cities=[];isPlatformAdmin=false;records=[];return;}
+  if(!user){cities=[];isPlatformAdmin=false;records=[];memberMap=new Map();return;}
   const userId=user.uid;
   const role=await getDoc(doc(db,"platformAdmins",userId));
   const platform=role.exists()&&role.data().enabled===true;
   const docs=await getDocs(platform?collection(db,"municipalities"):query(collection(db,"municipalities"),where("active","==",true)));
   let available=docs.docs.map(d=>({id:d.id,...d.data()}));
+  const nextMembers=new Map();
   if(!platform){
    const permitted=await Promise.all(available.map(async city=>{
     try{
      const member=await getDoc(doc(db,"municipalities",city.id,"members",userId));
-     return member.exists()&&member.data().enabled===true&&["admin","editor"].includes(member.data().role)?city:null;
+     if(member.exists()&&member.data().enabled===true&&["admin","editor"].includes(member.data().role)){
+       nextMembers.set(city.id,member.data());
+       return city;
+     }
+     return null;
     }catch{return null;}
    }));
    available=permitted.filter(Boolean);
   }
   if(seq!==loadSeq)return;
   isPlatformAdmin=platform;
+  memberMap=nextMembers;
   if(!platform&&tab==="members")tab="units";
   cities=available.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   if(!cities.some(c=>c.id===cityId))cityId=cities[0]?.id||"";
+  if(!isPlatformAdmin&&!adminTabGranted({member:memberMap.get(cityId),tab})){
+    tab=Object.keys(categories).find(t=>adminTabGranted({member:memberMap.get(cityId),tab:t}))||"units";
+  }
   notice="";
   await loadRecords();
  }catch(error){
@@ -112,6 +130,9 @@ async function loadAccess(){
 async function loadRecords(){
  const seq=++loadSeq;
  if(!cityId){records=[];members=[];show();return;}
+ if(!adminTabGranted({isPlatformAdmin,member:memberMap.get(cityId),tab})){
+   records=[];members=[];show();return;
+ }
  try{
   const snapshot=await getDocs(collection(db,"municipalities",cityId,tab==="members"?"members":tab));
   if(seq!==loadSeq)return;
@@ -141,7 +162,7 @@ function parseRecord(form){
  return {title:v.title?.slice(0,90),date:v.date||"",time:v.time||"",place:(v.place||"").slice(0,120),description:(v.description||"").slice(0,400),published};
 }
 async function onClick(event){
- const button=event.target.closest("[data-admin],[data-admin-tab],[data-admin-edit],[data-admin-publish],[data-admin-member]");
+ const button=event.target.closest("[data-admin],[data-admin-tab],[data-admin-edit],[data-admin-publish],[data-admin-member],[data-admin-edit-member]");
  if(!button)return;
  const action=button.dataset.admin;
  if(action==="login"){
@@ -162,6 +183,11 @@ async function onClick(event){
   tab=button.dataset.adminTab;editId=null;notice="";
   loading=true;show();await loadRecords();loading=false;show();return;
  }
+ if(button.hasAttribute("data-admin-edit-member")&&isPlatformAdmin){
+  memberEdit=button.dataset.adminEditMember;show();
+  document.querySelector("#grantForm")?.scrollIntoView({behavior:"smooth",block:"nearest"});return;
+ }
+ if(action==="cancel-member"){memberEdit=null;show();return;}
  if(button.hasAttribute("data-admin-member")&&isPlatformAdmin){
   const member=members.find(m=>m.id===button.dataset.adminMember);
   if(!member)return;
@@ -204,8 +230,19 @@ async function onSubmit(event){
  }
  if(form.id==="grantForm"&&isPlatformAdmin){
   const data=values(form);
+  const permissions=normalizedGrants(new FormData(form).getAll("moduleIds"));
   if(!/^[A-Za-z0-9_-]{16,128}$/.test(data.memberUid||"")||!["admin","editor"].includes(data.role))return feedback("Confira o UID e o nível de acesso.");
-  await run(async()=>{await setDoc(doc(db,"municipalities",cityId,"members",data.memberUid),{enabled:true,role:data.role,updatedAt:serverTimestamp()});});
+  if(data.role==="editor"&&!permissions.length)return feedback("Selecione pelo menos um setor para esse editor.");
+  const existing=members.find(m=>m.id===data.memberUid);
+  if(existing&&memberEdit!==data.memberUid)return feedback("Esta conta já está cadastrada. Use Editar permissões.");
+  await run(async()=>{
+   await setDoc(doc(db,"municipalities",cityId,"members",data.memberUid),{
+    enabled:existing?.enabled??true,role:data.role,
+    moduleIds:data.role==="admin"?[]:permissions,
+    updatedAt:serverTimestamp()
+   });
+   memberEdit=null;
+  });
   return;
  }
  if(form.id==="adminRecordForm"&&cityId){
@@ -222,7 +259,7 @@ export function mountAdmin(node,notify,signal){
  if(unsub){unsub();unsub=null;}
  hasInitialized=false;
  target=node;toast=notify||(()=>{});
- user=null;isPlatformAdmin=false;cities=[];records=[];members=[];editId=null;loading=true;notice="";
+ user=null;isPlatformAdmin=false;cities=[];records=[];members=[];editId=null;memberEdit=null;memberMap=new Map();loading=true;notice="";
  const currentTarget=node;
  hasInitialized=true;
  unsub=onAuthStateChanged(auth,async current=>{
@@ -233,7 +270,11 @@ export function mountAdmin(node,notify,signal){
  node.addEventListener("submit",onSubmit,{signal});
  node.addEventListener("change",async event=>{
   if(event.target.id!=="adminCity"||signal?.aborted)return;
-  cityId=event.target.value;editId=null;notice="";loading=true;show();await loadRecords();loading=false;show();
+  cityId=event.target.value;editId=null;memberEdit=null;notice="";
+  if(!adminTabGranted({isPlatformAdmin,member:memberMap.get(cityId),tab})){
+   tab=Object.keys(categories).find(t=>adminTabGranted({isPlatformAdmin,member:memberMap.get(cityId),tab:t}))||"units";
+  }
+  loading=true;show();await loadRecords();loading=false;show();
  },{signal});
  signal?.addEventListener("abort",()=>{
   ++loadSeq;

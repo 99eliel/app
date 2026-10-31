@@ -19,7 +19,7 @@ export function mountReports(root,notify=()=>{},signal) {
   if(loading){root.innerHTML=heading+'<div class="panel"><p>Carregando indicadores do município...</p></div>';return;}
   if(error){root.innerHTML=heading+`<div class="disclaimer"><strong>Não foi possível consultar os indicadores.</strong> ${E(error)}</div><button class="btn btn-outline" type="button" data-report="retry">Tentar novamente</button>`;return;}
   if(!user){root.innerHTML=heading+'<div class="panel admin-intro"><h2>Entre com sua conta autorizada</h2><p>Os relatórios operacionais são restritos à administração municipal.</p><button class="btn btn-solid" type="button" data-report="login">Entrar com Google</button></div>';return;}
-  if(!cities.length){root.innerHTML=heading+`<div class="empty-state"><strong>Sem municípios autorizados</strong><p>Seu UID ainda não está habilitado para consultar relatórios de nenhum município.</p><a href="#administracao" class="btn btn-outline">Ver administração</a></div>`;return;}
+  if(!cities.length){root.innerHTML=heading+`<div class="empty-state"><strong>Sem municípios disponíveis para relatórios gerais</strong><p>Os relatórios consolidados são acessíveis ao Superadmin e ao administrador municipal. Editores por setor acompanham seus próprios módulos em Gerenciar módulos.</p><a href="#gestao-modulos" class="btn btn-outline">Meus setores</a></div>`;return;}
   const city=cities.find(c=>c.id===cityId);
   if(!city){root.innerHTML=heading;return;}
   root.innerHTML=`${heading}
@@ -57,7 +57,7 @@ export function mountReports(root,notify=()=>{},signal) {
     const results=await Promise.all(all.map(async city=>{
      try{
       const member=await getDoc(doc(db,"municipalities",city.id,"members",user.uid));
-      return member.exists()&&member.data().enabled===true&&["admin","editor"].includes(member.data().role)?city:null;
+      return member.exists()&&member.data().enabled===true&&member.data().role==="admin"?city:null;
      }catch{return null;}
     }));
     cities=results.filter(Boolean);

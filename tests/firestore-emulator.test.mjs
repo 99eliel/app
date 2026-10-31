@@ -55,10 +55,16 @@ test("Regras Firestore: permissões e isolamento multi-município", async t=>{
     });
    }
    await setDoc(doc(db,"municipalities","cidade-a","members","editor-a"),{
-    role:"editor",enabled:true,updatedAt:timestamp()
+    role:"editor",enabled:true,moduleIds:["esf","agendamentos"],updatedAt:timestamp()
+   });
+   await setDoc(doc(db,"municipalities","cidade-a","members","reception-a"),{
+    role:"editor",enabled:true,moduleIds:["agendamentos"],updatedAt:timestamp()
+   });
+   await setDoc(doc(db,"municipalities","cidade-a","members","admin-a"),{
+    role:"admin",enabled:true,moduleIds:[],updatedAt:timestamp()
    });
    await setDoc(doc(db,"municipalities","cidade-b","members","editor-b"),{
-    role:"editor",enabled:true,updatedAt:timestamp()
+    role:"editor",enabled:true,moduleIds:["esf"],updatedAt:timestamp()
    });
   });
 
@@ -66,6 +72,8 @@ test("Regras Firestore: permissões e isolamento multi-município", async t=>{
   const citizenDb=env.authenticatedContext("citizen").firestore();
   const editorA=env.authenticatedContext("editor-a").firestore();
   const editorB=env.authenticatedContext("editor-b").firestore();
+  const receptionA=env.authenticatedContext("reception-a").firestore();
+  const adminA=env.authenticatedContext("admin-a").firestore();
   const anonymous=env.unauthenticatedContext().firestore();
 
   await t.test("Superadmin lê licença e edita módulos",async()=>{
@@ -90,16 +98,44 @@ test("Regras Firestore: permissões e isolamento multi-município", async t=>{
    }));
   });
 
-  await t.test("Editor pode escrever apenas no próprio município licenciado",async()=>{
-   await assertSucceeds(setDoc(doc(editorA,"municipalities","cidade-a","moduleSettings","laboratorio"),{
-    enabled:true,updatedAt:Timestamp.now()
-   }));
+  await t.test("Setores: editor ESF pode cadastrar ESF, mas não gerenciar habilitações",async()=>{
+   const newEsf={
+    moduleKey:"esf",title:"Outra ESF",description:"",details:"",address:"",
+    phone:"",hours:"",link:"",published:false,
+    createdAt:Timestamp.now(),updatedAt:Timestamp.now()
+   };
+   await assertSucceeds(addDoc(collection(editorA,"municipalities","cidade-a","moduleEntries","esf","items"),newEsf));
+   await assertFails(setDoc(doc(editorA,"municipalities","cidade-a","moduleSettings","farmacia"),{enabled:true,updatedAt:Timestamp.now()}));
+   await assertFails(addDoc(collection(editorA,"municipalities","cidade-a","moduleEntries","farmacia","items"),{...newEsf,moduleKey:"farmacia"}));
    await assertFails(getDoc(doc(editorA,"municipalities","cidade-b","moduleEntries","esf","items","unit-private")));
-   await assertFails(setDoc(doc(editorA,"municipalities","cidade-b","moduleSettings","laboratorio"),{
+  });
+
+  await t.test("Recepção não visualiza rascunhos de outros setores",async()=>{
+   await assertFails(getDoc(doc(receptionA,"municipalities","cidade-a","moduleEntries","esf","items","unit-private")));
+   await assertSucceeds(getDoc(doc(receptionA,"municipalities","cidade-a","moduleEntries","esf","items","unit-public")));
+   await assertSucceeds(getDocs(collection(receptionA,"municipalities","cidade-a","appointmentRequests")));
+   await assertFails(getDoc(doc(receptionA,"licenses","cidade-a")));
+  });
+
+  await t.test("Administrador municipal pode ativar módulos, editor suspenso não pode editar",async()=>{
+   await assertSucceeds(setDoc(doc(adminA,"municipalities","cidade-a","moduleSettings","farmacia"),{
     enabled:true,updatedAt:Timestamp.now()
    }));
-   await assertFails(setDoc(doc(editorB,"municipalities","cidade-b","moduleSettings","laboratorio"),{
-    enabled:true,updatedAt:Timestamp.now()
+   await assertFails(setDoc(doc(editorB,"municipalities","cidade-b","moduleEntries","esf","items","new"),{
+    moduleKey:"esf",title:"Bloqueado",description:"",details:"",address:"",phone:"",
+    hours:"",link:"",published:false,createdAt:Timestamp.now(),updatedAt:Timestamp.now()
+   }));
+  });
+
+  await t.test("Superadmin concede setores, sem permitir autoelevação",async()=>{
+   await assertSucceeds(setDoc(doc(superDb,"municipalities","cidade-a","members","new-editor"),{
+    role:"editor",enabled:true,moduleIds:["upa"],updatedAt:Timestamp.now()
+   }));
+   await assertFails(setDoc(doc(citizenDb,"municipalities","cidade-a","members","citizen"),{
+    role:"admin",enabled:true,moduleIds:[],updatedAt:Timestamp.now()
+   }));
+   await assertFails(setDoc(doc(superDb,"municipalities","cidade-a","members","bad-editor"),{
+    role:"editor",enabled:true,moduleIds:["admin-panel"],updatedAt:Timestamp.now()
    }));
   });
 

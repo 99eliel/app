@@ -192,3 +192,21 @@ Os testes automáticos de JS não substituem os testes das regras de segurança.
 O workflow `Validar portal` possui agora uma etapa `firestore-security` que inicializa o **Firebase Emulator Suite** com as regras atuais. Os testes em `tests/firestore-emulator.test.mjs` verificam: leitura de licenças pelo Superadmin, bloqueio de acesso a documentos privados, impossibilidade de autoelevação de permissões, isolamento entre municípios, bloqueio de edição com licença suspensa e criação de solicitações pelo próprio cidadão.
 
 Se qualquer regra falhar nos testes, o workflow ficará vermelho para que a incompatibilidade seja corrigida **antes** de copiar ou publicar as regras. O resultado do emulador não substitui uma auditoria completa, mas evita que alterações inválidas passem despercebidas.
+
+## Controle por setor — UPA, ESF e recepção
+
+O Superadmin pode abrir **Administração → Acessos** e cadastrar um UID como:
+- **Administrador municipal**: gerencia as unidades, os módulos e os registros do município, sem acesso às licenças comerciais.
+- **Editor por setor**: escolhe dentre 15 módulos. Exemplo: `agendamentos` para recepção, `upa` para plantão, `esf` para postos. A interface oculta módulos não autorizados **e o Firestore nega acesso a rascunhos privados, gravações e pedidos fora do setor**.
+- **Superadmin**: continua configurado exclusivamente em `platformAdmins/{uid}` no Firebase Console.
+
+O documento `municipalities/{cityId}/members/{uid}` passa a usar:
+```json
+{"role":"editor","enabled":true,"moduleIds":["upa"],"updatedAt":"timestamp"}
+```
+O administrador municipal usa `role:"admin"` e `moduleIds:[]`.
+**Membros antigos com `role:"editor"` e sem `moduleIds` não recebem acesso a nenhum setor até o Superadmin atualizar o cadastro**. Isso evita autorização implícita para módulos sensíveis.
+
+O painel **Gerenciar módulos** só mostra os setores autorizados para editores; somente o administrador municipal e o Superadmin podem habilitar ou desabilitar módulos. Relatórios consolidados (`/#gestao`) permanecem restritos aos administradores.
+
+**Regras em produção:** publique `firestore.rules` novamente no Firebase após aprovar a atualização; o GitHub Pages não altera as permissões do banco. O CI compila e testa o isolamento entre municípios e setores no Firebase Emulator Suite. Não se trata de sistema de prontuário.

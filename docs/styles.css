@@ -199,3 +199,18 @@ body.dark .report-stat-icon{background:#215045;color:#abecce}
 .portal-directory-toolbar select{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:10px}
 @media(max-width:850px){.account-layout{grid-template-columns:1fr}}
 @media(max-width:620px){.account-records{grid-template-columns:1fr}.account-summary{align-items:flex-start;flex-direction:column}.portal-notice-modal{padding:16px}}
+
+/* Acesso granular por setor, configurado pelo Superadmin */
+.sector-checklist{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:17px 15px;margin:10px 0;background:var(--surface-alt)}
+.sector-checklist legend{padding:0 8px;font-size:13px;font-weight:800}
+.sector-checklist>p{font-size:11px;color:var(--muted);margin:0 0 15px}
+.sector-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.sector-check{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:11px 12px;cursor:pointer}
+.sector-check:has(input:checked){border-color:var(--brand);background:var(--mint)}
+.sector-check input{margin:3px 0 0;accent-color:var(--brand)}
+.sector-check strong,.sector-check small{display:block;line-height:1.5}
+.sector-check strong{font-size:11px}.sector-check small{font-size:10px;color:var(--muted)}
+.member-actions{display:flex;gap:7px;flex-wrap:wrap}
+.member-actions .btn{font-size:11px;white-space:nowrap}
+@media(max-width:900px){.sector-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.sector-grid{grid-template-columns:1fr}.member-actions .btn{width:100%}}

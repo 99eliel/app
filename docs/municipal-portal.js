@@ -4,6 +4,7 @@ import {auth,db} from "./firebase.js";
 import {MODULES,MODULE_BY_ID,WEEK_DAYS,escapeText as E,validPublicUrl} from "./module-catalog.js";
 import {nextQueueValue,statusLabel,normalizeOperationalInfo,summarizeEsf,countRequestStatuses} from "./municipal-operations.js";
 import {posterUrl,noticeSeenKey,visibleNotices} from "./notice-utils.js";
+import {canAccessModule,canManageModules} from "./sector-access.js";
 import {GoogleAuthProvider,onAuthStateChanged,signInWithPopup} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import {collection,doc,getDoc,getDocs,addDoc,updateDoc,setDoc,query,where,serverTimestamp,onSnapshot,runTransaction,writeBatch} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -18,16 +19,18 @@ const block=(title,contents)=>`<section class="panel portal-block"><h3>${E(title
 const modulePath=(cityId,id)=>collection(db,"municipalities",cityId,"moduleEntries",id,"items");
 
 export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
- let user=auth.currentUser,platform=false,cities=[],cityId="",section="",settings=new Map(),entries=[],status=null,requests=[],editing=null,loading=true,error="",statusMessage="",latest=0,esfQuery="",requestFilter="all",noticeWindowKey="",noticesFeed=[],busy=false;
+ let user=auth.currentUser,platform=false,cities=[],cityId="",section="",memberMap=new Map(),settings=new Map(),entries=[],status=null,requests=[],editing=null,loading=true,error="",statusMessage="",latest=0,esfQuery="",requestFilter="all",noticeWindowKey="",noticesFeed=[],busy=false;
  let unsubscribeItems=null,unsubscribeUpa=null,unsubscribeNotices=null;
  const stopLive=()=>{unsubscribeItems?.();unsubscribeUpa?.();unsubscribeNotices?.();unsubscribeItems=null;unsubscribeUpa=null;unsubscribeNotices=null;noticesFeed=[];};
  const isAlive=()=>!signal?.aborted&&root.isConnected;
  const informSafe=msg=>{statusMessage=msg;inform(msg);};
   const enabled=m=>settings.get(m.id)?.enabled===true;
- const approved=m=>enabled(m)||adminMode;
+ const canUse=m=>!adminMode||canAccessModule({isPlatformAdmin:platform,member:memberMap.get(cityId),moduleId:m.id});
+ const manager=()=>canManageModules({isPlatformAdmin:platform,member:memberMap.get(cityId)});
+ const approved=m=>adminMode?canUse(m):enabled(m);
  const activeSection=()=>MODULE_BY_ID[section];
  const loadingView=()=>header("Carregando município...","Consultando informações autorizadas.")+'<div class="panel"><p>Carregando...</p></div>';
- const chooseCity=()=>`<div class="portal-choose"><label for="portal_city">Município</label><select id="portal_city">${cities.map(c=>`<option value="${E(c.id)}" ${c.id===cityId?"selected":""}>${E(c.name)} · ${E(c.state)}${!c.active?" (não publicado)":""}</option>`).join("")}</select>${adminMode?`<span class="pill">${platform?"Superadmin":"Equipe autorizada"}</span>`:""}</div>`;
+ const chooseCity=()=>`<div class="portal-choose"><label for="portal_city">Município</label><select id="portal_city">${cities.map(c=>`<option value="${E(c.id)}" ${c.id===cityId?"selected":""}>${E(c.name)} · ${E(c.state)}${!c.active?" (não publicado)":""}</option>`).join("")}</select>${adminMode?`<span class="pill">${platform?"Superadmin":memberMap.get(cityId)?.role==="admin"?"Administrador municipal":"Editor setorial"}</span>`:""}</div>`;
  const sections=()=>`<div class="portal-module-list">${MODULES.filter(approved).map(m=>`<button type="button" class="portal-module ${section===m.id?"active":""}" data-portal-module="${m.id}">${card(m)}<span><strong>${E(m.name)}</strong><small>${E(m.description)}</small></span>${adminMode?`<span class="license-badge ${enabled(m)?"good":"neutral"}">${enabled(m)?"Ativo":"Desligado"}</span>`:""}<span aria-hidden="true">›</span></button>`).join("")}</div>`;
  const currentEntries=()=>entries.filter(x=>x.moduleKey===section);
  const contents=(items=currentEntries())=>items.length?`<div class="data-grid">${items.map(x=>`<article class="data-card"><div class="data-card-top">${card(activeSection())}<span class="pill">${x.published?"Publicado":"Rascunho"}</span></div><h3>${E(x.title)}</h3><p class="data-caption">${E(x.description||"")}</p>${x.details?`<div class="data-detail"><strong>Informações</strong><span>${E(x.details)}</span></div>`:""}${x.hours?`<div class="data-detail"><strong>Horários</strong><span>${E(x.hours)}</span></div>`:""}${x.address?`<div class="data-detail"><strong>Local</strong><span>${E(x.address)}</span></div>`:""}${x.phone?`<div class="data-detail"><strong>Contato</strong><span>${E(x.phone)}</span></div>`:""}${section==="campanhas"&&posterUrl(x.link)?`<img class="portal-poster" loading="lazy" referrerpolicy="no-referrer" src="${E(posterUrl(x.link))}" alt="Cartaz do aviso: ${E(x.title)}">`:""}${validPublicUrl(x.link)?`<a class="text-link" href="${E(validPublicUrl(x.link))}" target="_blank" rel="noopener noreferrer">${section==="campanhas"?"Abrir cartaz ou link":"Abrir link público"} ↗</a>`:""}${adminMode?`<div class="data-card-actions"><button class="btn btn-outline" type="button" data-portal-edit="${E(x.id)}">Editar</button><button class="btn btn-outline" type="button" data-portal-publish="${E(x.id)}">${x.published?"Retirar do ar":"Publicar"}</button></div>`:""}</article>`).join("")}</div>`:empty("Nenhuma informação cadastrada","Este módulo começa vazio. A equipe responsável poderá cadastrar e publicar informações posteriormente.");
@@ -112,7 +115,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    ${chooseCity()}
    ${adminMode?`<div class="notice"><span class="notice-icon">ⓘ</span><div>Dados separados por município. A gravação requer uma licença vigente e as permissões adequadas no Firebase. Nenhum conteúdo de Pontalina foi importado.</div></div>`:""}
    <div class="portal-shell"><aside class="panel portal-nav"><h3>Módulos</h3>${sections()}</aside><div class="portal-content">
-    ${m?`<div class="portal-heading"><div>${card(m)}<div><span class="section-kicker">${E(m.group)}</span><h2>${E(m.name)}</h2><p>${E(m.description)}</p></div></div>${adminMode?`<button class="btn btn-outline" type="button" data-portal-action="toggle-module">${enabled(m)?"Desativar módulo":"Ativar módulo"}</button>`:""}</div>
+    ${m?`<div class="portal-heading"><div>${card(m)}<div><span class="section-kicker">${E(m.group)}</span><h2>${E(m.name)}</h2><p>${E(m.description)}</p></div></div>${adminMode&&manager()?`<button class="btn btn-outline" type="button" data-portal-action="toggle-module">${enabled(m)?"Desativar módulo":"Ativar módulo"}</button>`:""}</div>
       ${statusMessage?`<div class="notice"><span class="notice-icon">ⓘ</span><div>${E(statusMessage)}</div></div>`:""}
       ${m.special==="upa"?upaView():m.id==="esf"?esfView():m.id==="campanhas"?`${noticeHighlight()}${contents()}`:m.special==="guidance"?safeGuidance():m.special==="appointments"?requestsView("appointment"):m.special==="enrollments"?requestsView("course"):contents()}
       ${adminMode&&m.special!=="upa"&&m.special!=="guidance"?`<div class="module-toolbar"><button class="btn btn-solid" type="button" data-portal-action="create">+ ${m.special==="enrollments"?"Cadastrar curso":m.special==="appointments"?"Cadastrar opção de atendimento":"Cadastrar informação"}</button>${m.id==="campanhas"&&entries.some(x=>x.published)?'<button class="btn btn-outline" type="button" data-portal-action="unpublish-all">Retirar todos do ar</button>':""}</div>`:""}
@@ -141,9 +144,16 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    if(!isAlive()||gen!==latest)return;
    platform=canSeeAll;
    const raw=snap.docs.map(d=>({id:d.id,...d.data()}));
+   memberMap=new Map();
    if(adminMode&&!platform){
     const pairs=await Promise.all(raw.map(async city=>{
-     try{const member=await getDoc(doc(db,"municipalities",city.id,"members",user.uid));return member.exists()&&member.data().enabled&&["admin","editor"].includes(member.data().role)?city:null;}catch{return null;}
+     try{
+      const member=await getDoc(doc(db,"municipalities",city.id,"members",user.uid));
+      if(member.exists()&&member.data().enabled&&["admin","editor"].includes(member.data().role)){
+       memberMap.set(city.id,member.data());return city;
+      }
+      return null;
+     }catch{return null;}
     }));
     cities=pairs.filter(Boolean);
    }else cities=raw;
@@ -161,7 +171,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    const snap=await getDocs(adminMode?collection(db,"municipalities",cityId,"moduleSettings"):query(collection(db,"municipalities",cityId,"moduleSettings"),where("enabled","==",true)));
    if(!isAlive()||gen!==latest)return;
    settings=new Map(snap.docs.map(d=>[d.id,d.data()]));
-   if(!MODULE_BY_ID[section]||(!adminMode&&!enabled(MODULE_BY_ID[section])))section=MODULES.find(m=>approved(m))?.id||"";
+   if(!MODULE_BY_ID[section]||!approved(MODULE_BY_ID[section]))section=MODULES.find(m=>approved(m))?.id||"";
    await loadSection();
   }catch(e){error=errorText(e);loading=false;render();}
  };
@@ -198,6 +208,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   stopLive();
   const gen=++latest;loading=true;editing=null;render();
   if(!section){entries=[];status=null;requests=[];loading=false;render();return;}
+  if(adminMode&&!canUse(activeSection())){error="Este módulo não foi autorizado para seu perfil.";loading=false;render();return;}
   try{
    const m=activeSection();
    const items=await getDocs(adminMode?modulePath(cityId,section):query(modulePath(cityId,section),where("published","==",true)));
@@ -219,7 +230,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   }catch(e){error=errorText(e);loading=false;render();}
  };
  const execute=async(fn)=>{
-  if(!isAlive()||busy)return;
+  if(!isAlive()||busy||(adminMode&&!canUse(activeSection())))return;
   busy=true;
   try{await fn();await loadSection();inform("Informações atualizadas.");}
   catch(e){statusMessage=errorText(e);inform(statusMessage);loading=false;render();}
@@ -296,7 +307,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    return;
   }
   const module=event.target.closest("[data-portal-module]");
-  if(module){section=module.dataset.portalModule;esfQuery="";requestFilter="all";statusMessage="";void loadSection();return;}
+  if(module){const next=MODULE_BY_ID[module.dataset.portalModule];if(!next||!approved(next))return;section=next.id;esfQuery="";requestFilter="all";statusMessage="";void loadSection();return;}
   const item=event.target.closest("[data-portal-edit]");
   if(item){editing=item.dataset.portalEdit;render();root.querySelector("#portalEdit")?.scrollIntoView({behavior:"smooth",block:"nearest"});return;}
   const publish=event.target.closest("[data-portal-publish]");
@@ -310,7 +321,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
    if(popup?.open){try{localStorage.setItem(popup.dataset.noticeKey,"1");}catch{}popup.close();}
    return;
   }
-  if(action==="unpublish-all"&&adminMode&&section==="campanhas"){
+  if(action==="unpublish-all"&&adminMode&&canUse(activeSection())&&section==="campanhas"){
    const active=entries.filter(x=>x.published);
    if(!active.length)return;
    if(!window.confirm("Retirar todos os avisos deste município do portal? Os registros serão preservados."))return;
@@ -330,7 +341,7 @@ export function mountPortal(root,inform=()=>{},signal,adminMode=false) {
   if(action==="retry")void loadAccess();
   if(action==="sign-in")void signInWithPopup(auth,provider).catch(e=>informSafe(errorText(e)));
   if(action==="toggle-module"){
-   const m=activeSection();if(!m)return;
+   const m=activeSection();if(!m||!adminMode||!manager())return;
    const next=!enabled(m);
    void (async()=>{try{
     await setDoc(doc(db,"municipalities",cityId,"moduleSettings",section),{enabled:next,updatedAt:serverTimestamp()});
