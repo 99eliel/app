@@ -226,3 +226,9 @@ A versão Android nativa da loja ainda **não foi gerada**. A estratégia propos
 Consulte [o plano detalhado para Play Store](PLAY_STORE.md) para requisitos, certificados, Android API 36, testes fechados e privacidade.
 
 **Atenção:** as configurações de segurança no Firebase continuam independentes do GitHub Pages. Esta entrega Android não muda `firestore.rules`.
+
+## Firebase Hosting (alternativa ao GitHub Pages e base para a Play Store)
+
+O repositório foi preparado para publicar o site diretamente em `conectesaude-1`, reaproveitando o Authentication e Firestore existentes. Execute apenas `firebase deploy --only hosting --project conectesaude-1` após autenticar a Firebase CLI, evitando alterar as regras de segurança. Os arquivos do Hosting saem de `docs/` e há um service worker específico para esse endereço. O arquivo Digital Asset Links da TWA será criado quando houver um pacote Android e SHA-256 de assinatura verdadeiros.
+
+Consulte [FIREBASE_HOSTING.md](FIREBASE_HOSTING.md) para o passo a passo completo.

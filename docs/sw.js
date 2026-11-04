@@ -1,12 +1,12 @@
-// ConectaSaúde: cache SOMENTE da interface pública (não de dados/contas Firebase).
+// ConectaSaúde Firebase Hosting: cache SOMENTE da interface estática; sem dados do Firebase.
 // Incrementar VERSION quando os arquivos da aplicação mudarem.
 const VERSION="2.1.0";
 const CACHE="cs-static-"+VERSION;
 const SHELL=[
- "./","./index.html","./docs/index.html","./docs/app.js","./docs/styles.css",
- "./docs/modules.js","./docs/mobile-core.js","./docs/pwa-controller.js",
- "./docs/android-test.js","./docs/version.json","./docs/manifest.webmanifest",
- "./docs/icon.svg","./docs/icon-192.png","./docs/icon-512.png"
+ "./","./index.html","./app.js","./styles.css","./modules.js",
+ "./mobile-core.js","./pwa-controller.js","./android-test.js",
+ "./version.json","./manifest.webmanifest","./icon.svg",
+ "./icon-192.png","./icon-512.png"
 ];
 self.addEventListener("install",event=>{
  event.waitUntil((async()=>{
